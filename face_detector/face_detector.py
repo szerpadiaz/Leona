@@ -9,6 +9,7 @@ class FaceDetector:
     """
     def __init__(self, threshold = 0.5):
         self.face_detector = mediapipe.solutions.face_detection.FaceDetection(model_selection=1, min_detection_confidence=threshold)
+        self.bg_segmentor =  mediapipe.solutions.selfie_segmentation.SelfieSegmentation(model_selection=0)
 
     def detect_face(self, img):
         """
@@ -97,6 +98,21 @@ class FaceDetector:
         keypoints[:,1] = keypoints[:,1] - y1_pad
 
         return img_crop, keypoints, bbox_pad
+
+    def remove_background(self, img, replacement_color = (255,255,255), threshold = 0.8):
+        """
+        Removes the background from an image and replaces it with specified color (like in zoom)
+        :param img: Input Image, works with any size
+        :param replacement_color: new background color, RGB tuple 
+        :param threshold: Threshold for creating binary mask from probability map from model
+
+        """
+        result = self.bg_segmentor.process(img)
+        mask = result.segmentation_mask < threshold
+        out_img = img.copy()
+        out_img[mask] = replacement_color
+
+        return out_img
         
     def detect_face_and_crop(self, img):
         """
@@ -127,12 +143,17 @@ class FaceDetector:
 
         return out
 
-    def detect_face_and_draw(self, img, plot = True, keypoints = True):
+    def detect_face_and_draw(self, img, plot = True):
         """
         Detect Face and draw on image
         """
         bbox, kps = self.detect_face(img)
         if (bbox == None).any():
-            return img
+            return img, None, None
         out = self.draw_detection(img, bbox, kps)
         return out, bbox, kps
+
+    def detect_crop_bg_removal(self, img, replacement_color=(255,255,255), threshold=0.8):
+        img_crop, kps, bbox = self.detect_face_and_crop(img)
+        img_crop_bgrem = self.remove_background(img_crop, replacement_color=replacement_color, threshold=threshold)
+        return img_crop_bgrem, kps
