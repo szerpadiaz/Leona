@@ -45,7 +45,7 @@ class FaceDetector:
 
         return bbox, kps
 
-    def pad_crop_detection(self, img, bbox, kps = None, x_ratio = (0.4, 0.4), y_ratio=(0.55, 0.25)):
+    def pad_crop_detection(self, img, bbox, keypoints = None, x_ratio = (0.4, 0.4), y_ratio=(0.55, 0.25)):
         """
         # Sum of x_ratio should be same as sum of y_ratio
         Extend Bounding box and output image to include forehead, ears, neck and be square
@@ -89,14 +89,14 @@ class FaceDetector:
             y2_pad += distance
 
             # adjust keypoints if necessary
-            kps += distance
+            keypoints += distance
         
         img_crop = img[y1_pad:y2_pad, x1_pad:x2_pad]
         # recalculate keypoints
-        kps[:,0] = kps[:,0] - x1_pad
-        kps[:,1] = kps[:,1] - y1_pad
+        keypoints[:,0] = keypoints[:,0] - x1_pad
+        keypoints[:,1] = keypoints[:,1] - y1_pad
 
-        return img_crop, kps, bbox_pad
+        return img_crop, keypoints, bbox_pad
         
     def detect_face_and_crop(self, img):
         """
