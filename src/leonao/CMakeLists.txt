@@ -14,6 +14,16 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
+add_service_files(
+    DIRECTORY srv
+    FILES
+    MoveJoints.srv
+    GetCartesianCoordinates.srv
+    ConvertFromCameraBottomToTorso.srv
+    RestEndEffector.srv
+    Stiffness.srv
+)
+
 catkin_package(CATKIN_DEPENDS message_runtime)
 
 ###########
@@ -67,7 +77,7 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
-   scripts/main_controller.py
+  scripts/main_controller.py scripts/move_service.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

@@ -8,6 +8,7 @@
   <arg name="nao_ip" default="$(optenv NAO_IP 127.0.0.1)" />
   <arg name="nao_port" default="$(optenv NAO_PORT 9559)" />
 
+  <node pkg="leonao" type="move_service.py" name="move_service" required="true" args="$(arg nao_ip) $(arg nao_port)" output="screen"/>
   <node pkg="leonao" type="main_controller.py" name="main_controller" required="true" args="$(arg nao_ip) $(arg nao_port)" output="screen"/>
 
  <!-- <node pkg="nao_control_tutorial_2" type="nao_2" name="client" output="screen" /> -->
