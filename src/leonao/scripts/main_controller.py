@@ -3,7 +3,7 @@
 
 import rospy
 from naoqi_bridge_msgs.msg import HeadTouch
-from leonao.srv import GetCartesianCoordinates
+from leonao.srv import GetCartesianCoordinates, Stiffness
 
 class Main_leonao_controller():
     def __init__(self):
@@ -14,6 +14,10 @@ class Main_leonao_controller():
 
         self.head_sub = rospy.Subscriber('/tactile_touch', HeadTouch, self.head_touch_callback)
         self.record_timer = None
+
+    def head_touch_callback(self, head_touch_event):
+        self.front_button_pressed = head_touch_event.button == HeadTouch.buttonFront and head_touch_event.state == HeadTouch.statePressed
+        self.rear_button_pressed = head_touch_event.button == HeadTouch.buttonRear and head_touch_event.state == HeadTouch.statePressed
 
     def start_record_timer(self):
         self.record_timer = rospy.Timer(rospy.Duration(0.125), self.record_data, oneshot=False)
@@ -31,9 +35,25 @@ class Main_leonao_controller():
         except rospy.ServiceException as e:
                 print("Service call failed: %s"%e)
 
-    def head_touch_callback(self, head_touch_event):
-        self.front_button_pressed = head_touch_event.button == HeadTouch.buttonFront and head_touch_event.state == HeadTouch.statePressed
-        self.rear_button_pressed = head_touch_event.button == HeadTouch.buttonRear and head_touch_event.state == HeadTouch.statePressed
+    def disable_arm_stiffness(self):
+        rospy.wait_for_service('set_stiffness')
+        try:
+            set_stiffness = rospy.ServiceProxy('set_stiffness', Stiffness)
+            effector_names = ["RShoulderPitch", "RShoulderRoll", "ElbowYaw", "RElbowRoll", "RWristYaw"]
+            stiffness_values = [0.0, 0.0, 0.0, 0.0, 0.0]
+            set_stiffness(effector_names, stiffness_values)
+        except rospy.ServiceException as e:
+                print("Service call failed: %s"%e)
+
+    def enable_arm_stiffness(self):
+        rospy.wait_for_service('set_stiffness')
+        try:
+            set_stiffness = rospy.ServiceProxy('set_stiffness', Stiffness)
+            effector_names = ["RArm"]
+            stiffness_values = [1.0]
+            set_stiffness(effector_names, stiffness_values)
+        except rospy.ServiceException as e:
+                print("Service call failed: %s"%e)
 
     def recording_loop(self):
         if self.front_button_pressed:
@@ -45,21 +65,7 @@ class Main_leonao_controller():
                 print(self.recorded_positions)
                 print("###### RECORDING STOPPED ######")
             else:
-            #     nao_control_tutorial_2::Stiffness service;
-            #     // service.request.stiffness = 0.0;
-            #     // service.request.effector_name = "RArm";
-            #     service.request.effector_names.push_back("RShoulderPitch");
-            #     service.request.effector_names.push_back("RShoulderRoll");
-            #     service.request.effector_names.push_back("RElbowYaw");
-            #     service.request.effector_names.push_back("RElbowRoll");
-            #     service.request.effector_names.push_back("RWristYaw");
-            #     // service.request.effector_names.push_back("RHand");
-            #     service.request.stiffness.push_back(0.0);
-            #     service.request.stiffness.push_back(0.0);
-            #     service.request.stiffness.push_back(0.0);
-            #     service.request.stiffness.push_back(0.0);
-            #     service.request.stiffness.push_back(0.0);
-            #     stiffness_client.call(service);
+                self.disable_arm_stiffness()
                 print("Move to initial position")
                 rospy.sleep(1.0)
                 print("RECORDING STARTED")
@@ -70,11 +76,7 @@ class Main_leonao_controller():
         if self.rear_button_pressed:
             self.rear_button_pressed = False
             print("Rear button pressed down")
-
-        #     nao_control_tutorial_2::Stiffness srvStiffness;
-        #     srvStiffness.request.effector_names.push_back("RArm");
-        #     srvStiffness.request.stiffness.push_back(1.0);
-        #     stiffness_client.call(srvStiffness);
+            self.enable_arm_stiffness()
             
         #     std::cout << "Sending MOVE !!!!!!!!!" << std::endl;
         #     int i = 0;
@@ -101,13 +103,10 @@ if __name__ == '__main__':
 
     try:
         main_controller = Main_leonao_controller()
-        rate = rospy.Rate(10) # 10hz
+        #rate = rospy.Rate(10) # 10hz
         while not rospy.is_shutdown():
-            #hello_str = "hello world %s" % rospy.get_time()
-            #rospy.loginfo(hello_str)
             main_controller.recording_loop()
-            rate.sleep()
-            #rospy.spin_once()
+            #rate.sleep()
 
     except rospy.ROSInterruptException:
         pass

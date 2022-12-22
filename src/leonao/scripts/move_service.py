@@ -131,7 +131,8 @@ def move_end_effector(req):
     return True
 
 def set_stiffness(req):
-    MotionProxy_stiffnessInterpolation(req.effector_name, req.stiffness, [1.0])
+    stiffs = [s for s in req.stiffness]
+    MotionProxy_stiffnessInterpolation(list(req.effector_names), stiffs, [1.0 for i in range(len(stiffs))])
     return True
 
 def move_server():
