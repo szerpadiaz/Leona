@@ -3,17 +3,19 @@
 
 import rospy
 from naoqi_bridge_msgs.msg import HeadTouch
-from leonao.srv import GetCartesianCoordinates, Stiffness, MoveJoints
+from move_controller import Move_controller
 
 class Main_leonao_controller():
     def __init__(self):
         self.front_button_pressed = False
         self.rear_button_pressed = False
+        self.head_sub = rospy.Subscriber('/tactile_touch', HeadTouch, self.head_touch_callback)
+
+        self.move_controller = Move_controller()
+
+        self.record_timer = None
         self.recording_started = False
         self.recorded_positions = []
-
-        self.head_sub = rospy.Subscriber('/tactile_touch', HeadTouch, self.head_touch_callback)
-        self.record_timer = None
 
     def head_touch_callback(self, head_touch_event):
         self.front_button_pressed = head_touch_event.button == HeadTouch.buttonFront and head_touch_event.state == HeadTouch.statePressed
@@ -27,49 +29,20 @@ class Main_leonao_controller():
             self.record_timer.shutdown()
 
     def record_data(self, timer_event):
-        rospy.wait_for_service('get_cartesian_coordinates')
-        try:
-            get_position = rospy.ServiceProxy('get_cartesian_coordinates', GetCartesianCoordinates)
-            resp = get_position("RArm")
-            self.recorded_positions.append(list(resp.position))
-        except rospy.ServiceException as e:
-                print("Service call failed: %s"%e)
+        self.recorded_positions.append(self.move_controller.get_position('RArm'))
 
     def disable_arm_stiffness(self):
-        rospy.wait_for_service('set_stiffness')
-        try:
-            set_stiffness = rospy.ServiceProxy('set_stiffness', Stiffness)
-            effector_names = ["RShoulderPitch", "RShoulderRoll", "ElbowYaw", "RElbowRoll", "RWristYaw"]
-            stiffness_values = [0.0, 0.0, 0.0, 0.0, 0.0]
-            set_stiffness(effector_names, stiffness_values)
-        except rospy.ServiceException as e:
-                print("Service call failed: %s"%e)
+        effector_names = ["RShoulderPitch", "RShoulderRoll", "ElbowYaw", "RElbowRoll", "RWristYaw"]
+        stiffness_values = [0.0, 0.0, 0.0, 0.0, 0.0]
+        self.move_controller.set_stiffness(effector_names, stiffness_values)
 
     def enable_arm_stiffness(self):
-        rospy.wait_for_service('set_stiffness')
-        try:
-            set_stiffness = rospy.ServiceProxy('set_stiffness', Stiffness)
-            effector_names = ["RArm"]
-            stiffness_values = [1.0]
-            set_stiffness(effector_names, stiffness_values)
-        except rospy.ServiceException as e:
-                print("Service call failed: %s"%e)
+        self.move_controller.set_stiffness(["RArm"], [1.0])
 
     def move_arm(self):
-        rospy.wait_for_service('move_end_effector')
-        try:
-            move_end_effector=rospy.ServiceProxy('move_end_effector', MoveJoints)
-            time = 0.0 #0.1
-            speed = 0.2 #0.2
-            for pos6D in self.recorded_positions:
-                position = pos6D[:3]
-                orientation = pos6D[3:]
-                move_end_effector('RArm', position, orientation, speed, time)
-                #rospy.sleep(0.5)
-            print("Sending MOVE ENDED *********    i = ", len(self.recorded_positions)) 
-                
-        except rospy.ServiceException as e:
-            print("Service call failed: %s"%e)
+        #self.move_controller.move_end_effector_with_speed('RArm', self.recorded_positions, 0.2)
+        self.move_controller.move_end_effector_with_time('RArm', self.recorded_positions, 0.1)
+        print("Sending MOVE ENDED *********    i = ", len(self.recorded_positions)) 
 
     def recording_loop(self):
         if self.front_button_pressed:
