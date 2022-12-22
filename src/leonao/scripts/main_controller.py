@@ -3,7 +3,7 @@
 
 import rospy
 from naoqi_bridge_msgs.msg import HeadTouch
-from leonao.srv import GetCartesianCoordinates, Stiffness
+from leonao.srv import GetCartesianCoordinates, Stiffness, MoveJoints
 
 class Main_leonao_controller():
     def __init__(self):
@@ -55,10 +55,25 @@ class Main_leonao_controller():
         except rospy.ServiceException as e:
                 print("Service call failed: %s"%e)
 
+    def move_arm(self):
+        rospy.wait_for_service('move_end_effector')
+        try:
+            move_end_effector=rospy.ServiceProxy('move_end_effector', MoveJoints)
+            time = 0.0 #0.1
+            speed = 0.2 #0.2
+            for pos6D in self.recorded_positions:
+                position = pos6D[:3]
+                orientation = pos6D[3:]
+                move_end_effector('RArm', position, orientation, speed, time)
+                #rospy.sleep(0.5)
+            print("Sending MOVE ENDED *********    i = ", len(self.recorded_positions)) 
+                
+        except rospy.ServiceException as e:
+            print("Service call failed: %s"%e)
+
     def recording_loop(self):
         if self.front_button_pressed:
             self.front_button_pressed = False
-            print("Front button pressed down")
             self.stop_record_timer()
             if (self.recording_started):
                 self.recording_started = False
@@ -73,29 +88,10 @@ class Main_leonao_controller():
                 self.start_record_timer()
                 self.recording_started = True
 
-        if self.rear_button_pressed:
+        if self.rear_button_pressed and not self.recording_started:
             self.rear_button_pressed = False
-            print("Rear button pressed down")
             self.enable_arm_stiffness()
-            
-        #     std::cout << "Sending MOVE !!!!!!!!!" << std::endl;
-        #     int i = 0;
-        #     for(const auto& pos6D : recorded_positions){
-        #         i++;
-        #         nao_control_tutorial_2::MoveJoints srvMove;
-        #         srvMove.request.effector_name = "RArm";
-        #         std::vector<float> pos{pos6D[0], pos6D[1], pos6D[2]};
-        #         srvMove.request.position = pos;
-        #         std::vector<float> orient{pos6D[3], pos6D[4], pos6D[5]};
-        #         srvMove.request.orientation = orient;
-        #         //srvMove.request.speed = 0.2;
-        #          srvMove.request.time = 0.1;
-        #         move_client.call(srvMove);
-        #         //ros::Duration(0.5).sleep();
-        #     }
-
-        #     std::cout << "Sending MOVE ENDED *********    i = " << i << std::endl;  
-        # }
+            self.move_arm()
 
 if __name__ == '__main__':
 

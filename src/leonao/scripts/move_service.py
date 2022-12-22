@@ -38,12 +38,12 @@ def MotionProxy_init():
     #print('right_arm_rest_position', right_arm_rest_position)
 
 def MotionProxy_setPositions(effector_name, frame_id, position, speed, axis_mask):
-    print("Setting position to " + str(effector_name) + " Position" + str(position))
+    print("Setting position to " + str(effector_name) + " -" + str(position))
     motionProxy.setPositions(effector_name, frame_id, position, speed, axis_mask)
 
 def MotionProxy_positionInterpolations(effector_name, frame_id, position, axis_mask, time):
-    motionProxy.positionInterpolations(req.efector_name, frame_id, position, axis_mask, time)
-    print("Setting position (interpolation) to " + str(effector_name) + " Position" + str(position))
+    motionProxy.positionInterpolations(effector_name, frame_id, position, axis_mask, time)
+    print("Setting position (interpolation) to " + str(effector_name) + " -" + str(position))
 
 def MotionProxy_getPosition(effector_name, frame_id):
     position = motionProxy.getPosition(effector_name, frame_id, True)
@@ -107,7 +107,6 @@ def get_cartesian_coordinates(req):
     return res 
 
 def move_end_effector(req):
-    print(req)
     axis_mask = 63
     if not req.orientation:
         # If no Orientation specified, use current orientation
@@ -119,8 +118,6 @@ def move_end_effector(req):
     position[:3] = getClippedPositionVector(position[:3], req.effector_name)
     br = tf.TransformBroadcaster()
     br.sendTransform(position[:3],[0, 0 , 0, 1.0], rospy.Time.now(), "target_position", "torso")
-
-    print("TARGET POSITION", req.effector_name, position)
 
     if req.speed > 0.0: # Speed is given
         speed = np.min([req.speed, 1])
