@@ -4,7 +4,7 @@
 import rospy
 
 class Main_leonao_controller():
-    def __init__(self) -> None:
+    def __init__(self):
         self.record_timer = rospy.Timer(rospy.Duration(0.125), self.record_timer_callback, oneshot=False)
         self.record_timer.shutdown()
 
@@ -18,7 +18,7 @@ class Main_leonao_controller():
 
 if __name__ == '__main__':
 
-    rospy.init_node('main_leonao_controller', anonymous=True)
+    rospy.init_node('main_controller', anonymous=True)
 
     try:
         Main_leonao_controller()
