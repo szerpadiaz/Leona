@@ -3,14 +3,15 @@ import os
 import rospy
 import time
 import numpy as np
-import almath
 import sys
-#from naoqi import ALProxy
 from leonao.srv import MoveJoints, GetCartesianCoordinates, GetCartesianCoordinatesResponse, Stiffness
 from leonao.srv import ConvertFromCameraBottomToTorso, ConvertFromCameraBottomToTorsoResponse
 from leonao.srv import RestEndEffector
 import roslib
 import tf
+
+#import almath
+#from naoqi import ALProxy
 
 motionProxy = 0
 FRAME_TORSO = 0 # Task frame FRAME_TORSO = 0, FRAME_WORLD = 1, FRAME_ROBOT = 2
@@ -22,7 +23,7 @@ def MotionProxy_init():
     robotIP=str(os.getenv("NAO_IP"))
     PORT=int(9559)
     
-    print("Initializing ALMotion with (ip, port)" + robotIP + PORT)
+    print("Initializing ALMotion with (ip, port)", robotIP, str(PORT))
     #motionProxy = ALProxy("ALMotion", robotIP, PORT)
     #motionProxy.stiffnessInterpolation(['Body'], [1.0], [1.0])
 
@@ -37,17 +38,12 @@ def MotionProxy_init():
     #print('right_arm_rest_position', right_arm_rest_position)
 
 def MotionProxy_setPositions(effector_name, frame_id, position, speed, axis_mask):
-    print("Setting position to " + effector_name + " Position" + position)
+    print("Setting position to " + str(effector_name) + " Position" + str(position))
     # motionProxy.setPositions(effector_name, frame_id, position, speed, axis_mask)
 
 def MotionProxy_positionInterpolations(effector_name, frame_id, position, axis_mask, time):
     # motionProxy.positionInterpolations(req.efector_name, frame_id, position, axis_mask, time)
-    print("Setting position (interpolation) to " + effector_name + " Position" + position)
-
-
-def MotionProxy_getTransform(from_joint_name, to_ref_frame_id):
-    #return motionProxy.getTransform(from_joint_name, to_ref_frame_id, False)
-    return almath.Transform()
+    print("Setting position (interpolation) to " + str(effector_name) + " Position" + str(position))
 
 def MotionProxy_getPosition(effector_name, frame_id):
     #position = motionProxy.getPosition(effector_name, frame_id, True)
@@ -57,7 +53,19 @@ def MotionProxy_getPosition(effector_name, frame_id):
 
 def MotionProxy_stiffnessInterpolation(effector_name, stiffness, time):
     #motionProxy.stiffnessInterpolation(effector_name, stiffness, time)
-    print("MotionProxy_stiffnessInterpolation: " + effector_name + " - " + stiffness)
+    print("MotionProxy_stiffnessInterpolation: " + str(effector_name) + " - " + str(stiffness))
+
+def MotionProxy_getTransform(from_joint_name, to_ref_frame_id):
+    #return almath.Transform(motionProxy.getTransform(from_joint_name, to_ref_frame_id, False))
+    return None
+
+def Almath_transform_fromPosition(x,y,z,rx,ry,rz):
+    #almath.Transform().fromPosition(x, y, z, rx, ry, rz)
+    return None
+
+def Almath_transformInverse(tf):
+    #almath.transformInverse(tf)
+    return None
 
 
 def rest_end_effector(req):
@@ -77,11 +85,11 @@ def convert_from_camera_bottom_to_torso(req):
     #   Using: tf tf_echo /CameraBottom_optical_frame /Head
     #     - Translation:              [-0.000, 0.065, -0.057]
     #     - Rotation in RPY (radian): [3.142, -1.550, -1.571]
-    tf_ch = almath.Transform().fromPosition(0.000, 0.065, -0.057, 3.142, -1.550, -1.571) # Head /CameraTop_optical_frame 
-    tf_hc = almath.transformInverse(tf_ch)
+    tf_ch = Almath_transform_fromPosition(0.000, 0.065, -0.057, 3.142, -1.550, -1.571) # Head /CameraTop_optical_frame 
+    tf_hc = Almath_transformInverse(tf_ch)
 
     # Get transform from Head to torso
-    tf_th = almath.Transform(MotionProxy_getTransform("Head", FRAME_TORSO)) # Head to Torso
+    tf_th = MotionProxy_getTransform("Head", FRAME_TORSO) # Head to Torso
     tf_tc = tf_th * tf_hc
     tf_tc = np.reshape(tf_tc.toVector(), (4,4))
 

@@ -24,6 +24,7 @@ add_service_files(
     Stiffness.srv
 )
 
+generate_messages(DEPENDENCIES std_msgs)
 catkin_package(CATKIN_DEPENDS message_runtime)
 
 ###########
