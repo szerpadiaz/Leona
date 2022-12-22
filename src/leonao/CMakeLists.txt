@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   message_generation
   tf
+  naoqi_bridge_msgs
 )
 
 add_service_files(
@@ -80,6 +81,7 @@ include_directories(
 catkin_install_python(PROGRAMS
   scripts/main_controller.py 
   scripts/move_service.py
+
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

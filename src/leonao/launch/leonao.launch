@@ -15,5 +15,5 @@
  <!-- <node pkg="nao_control_tutorial_2" type="aruco_tracker" name="aruco_tracker" /> -->
  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find nao_control_tutorial_2)/rviz/config.rviz" required="true" /> -->
   
- <!-- <include file="$(find nao_apps)/launch/tactile.launch" /> -->
+  <include file="$(find nao_apps)/launch/tactile.launch" />
 </launch>

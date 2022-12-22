@@ -10,8 +10,8 @@ from leonao.srv import RestEndEffector
 import roslib
 import tf
 
-#import almath
-#from naoqi import ALProxy
+import almath
+from naoqi import ALProxy
 
 motionProxy = 0
 FRAME_TORSO = 0 # Task frame FRAME_TORSO = 0, FRAME_WORLD = 1, FRAME_ROBOT = 2
@@ -22,10 +22,10 @@ fake_position = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
 def MotionProxy_init():
     robotIP=str(os.getenv("NAO_IP"))
     PORT=int(9559)
-    
-    print("Initializing ALMotion with (ip, port)", robotIP, str(PORT))
-    #motionProxy = ALProxy("ALMotion", robotIP, PORT)
-    #motionProxy.stiffnessInterpolation(['Body'], [1.0], [1.0])
+    global motionProxy
+    #print("Initializing ALMotion with (ip, port)", robotIP, str(PORT))
+    motionProxy = ALProxy("ALMotion", robotIP, PORT)
+    MotionProxy_stiffnessInterpolation(['Body'], [1.0], [1.0])
 
     #postureProxy = ALProxy("ALRobotPosture", robotIP, PORT)
     #postureProxy.goToPosture("StandInit", 1.0)    
@@ -39,16 +39,16 @@ def MotionProxy_init():
 
 def MotionProxy_setPositions(effector_name, frame_id, position, speed, axis_mask):
     print("Setting position to " + str(effector_name) + " Position" + str(position))
-    # motionProxy.setPositions(effector_name, frame_id, position, speed, axis_mask)
+    motionProxy.setPositions(effector_name, frame_id, position, speed, axis_mask)
 
 def MotionProxy_positionInterpolations(effector_name, frame_id, position, axis_mask, time):
-    # motionProxy.positionInterpolations(req.efector_name, frame_id, position, axis_mask, time)
+    motionProxy.positionInterpolations(req.efector_name, frame_id, position, axis_mask, time)
     print("Setting position (interpolation) to " + str(effector_name) + " Position" + str(position))
 
 def MotionProxy_getPosition(effector_name, frame_id):
-    #position = motionProxy.getPosition(effector_name, frame_id, True)
-    position = fake_position 
-    fake_position += 1
+    position = motionProxy.getPosition(effector_name, frame_id, True)
+    #position = fake_position 
+    #fake_position += 1
     return position
 
 def MotionProxy_stiffnessInterpolation(effector_name, stiffness, time):
@@ -56,16 +56,16 @@ def MotionProxy_stiffnessInterpolation(effector_name, stiffness, time):
     print("MotionProxy_stiffnessInterpolation: " + str(effector_name) + " - " + str(stiffness))
 
 def MotionProxy_getTransform(from_joint_name, to_ref_frame_id):
-    #return almath.Transform(motionProxy.getTransform(from_joint_name, to_ref_frame_id, False))
-    return None
+    return almath.Transform(motionProxy.getTransform(from_joint_name, to_ref_frame_id, False))
+    #return None
 
 def Almath_transform_fromPosition(x,y,z,rx,ry,rz):
-    #almath.Transform().fromPosition(x, y, z, rx, ry, rz)
-    return None
+    return almath.Transform().fromPosition(x, y, z, rx, ry, rz)
+    #return None
 
 def Almath_transformInverse(tf):
-    #almath.transformInverse(tf)
-    return None
+    return almath.transformInverse(tf)
+    # return None
 
 
 def rest_end_effector(req):
@@ -103,7 +103,7 @@ def convert_from_camera_bottom_to_torso(req):
 
 def get_cartesian_coordinates(req):
     res = GetCartesianCoordinatesResponse()
-    res.position = MotionProxy_getPosition(req.effector_name, FRAME_TORSO, True)
+    res.position = MotionProxy_getPosition(req.effector_name, FRAME_TORSO)
     return res 
 
 def move_end_effector(req):
