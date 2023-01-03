@@ -36,21 +36,23 @@ class Sketcher:
         results = fm.process(img)
         out = results.multi_face_landmarks[0].landmark
 
-        # These were found by manual inspection
-        eye_left = [out[468].x, out[468].y]      #[(out[130].x + out[133].x)/2, (out[130].y + out[133].y)/2]
-        eye_right = [out[473].x, out[473].y]     #[(out[359].x + out[398].x)/2, (out[359].y + out[398].y)/2]
-        nose = [out[4].x, out[4].y]            #[out[4].x, out[4].y]
-        mouth_left = [out[62].x, out[62].y]     #[out[186].x, out[186].y]
-        mouth_right = [out[308].x, out[308].y]   #[out[292].x, out[292].y]
 
-        # Denormalize as mediapipe returns normalized coordinates in Interval [0,1]
-        kps = np.array([eye_left, eye_right, nose, mouth_left, mouth_right])
-        kps[:, 0] *= img.shape[1]
-        kps[:, 1] *= img.shape[0]
+        all_kps = []
+        for p in out:
+            all_kps.append(np.array([p.x, p.y]))
+        all_kps = np.array(all_kps)
+    
+        # Denormalize, bc mediapipe outputs normlazied between 0-1
+        all_kps[:, 0] *= img.shape[1]
+        all_kps[:, 1] *= img.shape[0]
 
-        return kps
+        # Get idcs of landmarks for transformation
+        landmark_idcs = np.array([468, 473, 4, 62, 308]) # eye_left, eye_right, nose, mouth_left, mouth_right # Found by manual inspection
+        landmark_kps = all_kps[landmark_idcs]
 
-    def align_for_gan_input(self, img, kps, mask=None, replacement_color=(255,255,255)):
+        return landmark_kps, all_kps
+
+    def align_for_gan_input(self, img, kps, mask = None, all_kps = None, replacement_color=(255,255,255)):
         """
         Aligns points just like in the matlab script under /preprocess/example/face_align_512.m
         It's not 100% the same bc matlab calculates transformation different, but should be sufficient
@@ -88,21 +90,18 @@ class Sketcher:
             kps_tf.append(kp_tf)
         kps_tf = np.array(kps_tf).astype(int)[:,:2]
 
-        return img_aligned, kps_tf, mask_aligned
+        # Transform all Keypoints
+        all_kps_tf = []
+        all_kps_homog = np.hstack([all_kps, np.ones((len(all_kps), 1))])
+        for kp in all_kps_homog:
+            kp_tf = h @ kp
+            all_kps_tf.append(kp_tf)
+        all_kps_tf = np.array(all_kps_tf).astype(int)[:,:2]
 
-    def normalize(self, img):
-        """
-        Normalizes Image to be between -1 and 1
-        """
-        if (img.dtype == np.uint8):
-            return (2*img.astype(np.float64)/255 - 1)
-        else:
-            if (np.max(img) > 1.0) or (np.min(img) < 0):
-                return 2*(img - np.min(img))/(np.max(img)-np.min(img)) - 1
-            else:
-                return 2*img - 1
+        return img_aligned, kps_tf, mask_aligned, all_kps_tf
 
-    def prepare_input_for_torch(self, img, mask, kps):
+
+    def prepare_input_for_torch(self, img, mask, kps, all_kps):
         """
         Creates the necessary cropped images etc for APDrawGAN input
         Setup like authors of APDrawGAN do it
@@ -158,46 +157,83 @@ class Sketcher:
         item['eyer_A'] = (torch.from_numpy(np.expand_dims(np.moveaxis(item['eyer_A'], -1, 0), 0))).float()
         item['nose_A'] = (torch.from_numpy(np.expand_dims(np.moveaxis(item['nose_A'], -1, 0), 0))).float()
         item['mouth_A'] = (torch.from_numpy(np.expand_dims(np.moveaxis(item['mouth_A'], -1, 0), 0))).float()
-        
+        # Only needed for later processing
+        item['all_kps_tf'] = all_kps
+
         return item
 
+    def normalize(self, img):
+        """
+        Normalizes Image to be between -1 and 1
+        """
+        if (img.dtype == np.uint8):
+            return (2*img.astype(np.float64)/255 - 1)
+        else:
+            if (np.max(img) > 1.0) or (np.min(img) < 0):
+                return 2*(img - np.min(img))/(np.max(img)-np.min(img)) - 1
+            else:
+                return 2*img - 1
+
+    def create_face_mask(self, data):
+        """ 
+        Creates a mask to isolate the face.
+        kepoints around the face were found by manual inspection
+        """
+        idcs = [103, 67, 109, 10, 338, 297, 332, 284, 251, 389, 356, 447, 366, 323, 401, 435, 367, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 215, 132, 177, 93, 137, 234, 227, 127,162, 21, 54, 103]
+        outline_kps = data['all_kps_tf'][idcs]
+
+        img_shape = np.swapaxes(np.swapaxes(data['A'].numpy()[0,:,:,:],0,2),0,1).shape
+
+        face_mask = np.zeros(img_shape)
+        face_mask = cv2.fillPoly(face_mask, [np.array(outline_kps)], (1,1,1))[:,:,0]
+        data['face_mask'] = face_mask
+        return face_mask
 
     def prepare_input(self, img):
         """
         Prepares the image for handing it to the model.
         """
-        kps = self.find_face_landmarks(img)
+        kps, all_kps = self.find_face_landmarks(img)
         img_bg_rem, mask = self.fd.remove_background(img)
 
-        img_aligned, kps_tf, mask_aligned = self.align_for_gan_input(img_bg_rem, kps, mask=mask)
-        data = self.prepare_input_for_torch(img_aligned, mask_aligned, kps_tf)
+        img_aligned, kps_tf, mask_aligned, all_kps_tf = self.align_for_gan_input(img_bg_rem, kps, mask=mask, all_kps=all_kps)
+        data = self.prepare_input_for_torch(img_aligned, mask_aligned, kps_tf, all_kps_tf)
         return data
 
-    def run(self, img, visualize_inputs = False):
+    def run(self, img, visualize = False):
         """
         Full pipeline to create a sketch image
         """
         input_data = self.prepare_input(img)
+        face_mask = self.create_face_mask(input_data)
         out_img = self.apdrawgan.run(input_data)
-        #out_img = ((out_img+1) / 2 * 255).astype(np.uint8)
+        
+        # Denormalize
         out_img = (out_img + 1) / 2
 
-        if visualize_inputs:
-            self.visualize_inputs(input_data)
-        return out_img
+        if visualize:
+            input_data['output'] = out_img
+            input_data['masked_output'] = out_img * face_mask
+            input_data['masked_output_inv'] = out_img * (face_mask*-1 + 1)
+            self.visualize_inputs_outputs(input_data)
 
-    def visualize_inputs(self, data):
+        return out_img, face_mask
+
+    def visualize_inputs_outputs(self, data):
         import matplotlib.pyplot as plt
-        rows = 3
+        rows = 5
         cols = 3
-        plt.figure(figsize=(15,15))
+        plt.figure(figsize=(5*cols,5*rows))
         
         imgs = []
         i = 1
         for k in data.keys():
-            if not (k in ['A_paths', 'center']):
+            if not (k in ['A_paths', 'center', 'all_kps_tf']):
                 plt.subplot(rows,cols, i)
-                plt.imshow(np.moveaxis(data[k][0,:,:,:].numpy(), 0, -1))
+                try:
+                    plt.imshow((np.moveaxis(data[k][0,:,:,:].numpy(), 0, -1)+1)/2)
+                except:
+                    plt.imshow(data[k], cmap='gray')
                 plt.title(k)
                 i +=1
         plt.tight_layout()
