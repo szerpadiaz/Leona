@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+ #!/usr/bin/env python
 ## Example to setup the frameworks for the canvas
 
 from turtle import position
@@ -10,8 +10,15 @@ import almath
 from naoqi import ALProxy
 from naoqi_bridge_msgs.msg import HeadTouch
 
-DIST_TO_TIP = [0.08,0.0,0.035, 1]
-FRAME_TORSO = 0
+# Naming convention:
+# - BASE-FRAME    : the frame attached to the NAO's Torso (in our case is fixed, the robot is not moving)
+# - WRIST-FRAME   : the frame attached to the NAO's RArm end-effector
+# - TOOL-FRAME    : the frame attached to the tip of the marker
+# - STATION-FRAME : the frame attached to the Table where Leonao is painting (this is our workstation universal reference)
+# - GOAL-FRAME    : the frame indicating where the tip of the marker should move to
+
+TIP_POSITION_WITH_RESPECT_TO_W = [0.08,0.0,0.035]
+BASE_FRAME_ID = 0 # For TORSO
 
 class Drawing_setup_tester():
     def __init__(self):
@@ -22,86 +29,62 @@ class Drawing_setup_tester():
         self.head_sub = rospy.Subscriber('/tactile_touch', HeadTouch, self.head_touch_callback)
         self.front_button_pressed = False
 
-        #tf_t_w = almath.Transform(DIST_TO_TIP[0], DIST_TO_TIP[1], DIST_TO_TIP[2])
-        #self.tf_w_t = almath.transformInverse(tf_t_w)
+        self.init_tool_and_station_transformations()
+
+    def init_tool_and_station_transformations(self):
+        # T_wt: transformation of the TOOL-FRAME (t) with respect to the WRIST-FRAME (w)
+        x = TIP_POSITION_WITH_RESPECT_TO_W[0]
+        y = TIP_POSITION_WITH_RESPECT_TO_W[1]
+        z = TIP_POSITION_WITH_RESPECT_TO_W[2]
+        self.T_wt = almath.Transform(x,y,z)
+
+        # T_tw: transformation of the WRIST-FRAME (w) with respect to the TOOL-FRAME (t)
+        self.T_tw = almath.transformInverse(self.T_wt)
+
+        # T_bs: Transformation of the STATION-FRAME (s) with respect to the BASE-FRAME (b)
+        T_bw = almath.Transform(self.motion_proxy.getTransform("RArm", BASE_FRAME_ID, False))
+        # When this function is called we assume that the tip of the TOOL-FRAME coincides with the STATION-FRAME
+        # {TOOL-FRAME} = {STATION-FRAME}
+        T_ws = self.T_wt
+        self.T_bs = T_bw * T_ws
         
-        self.t_w_t = DIST_TO_TIP
-        self.tf_b_w = almath.Transform(self.motion_proxy.getTransform("RArm", FRAME_TORSO, False))
-        self.initial_t_b_t = self.get_point_b_t(self.t_w_t)
 
-    def get_point_b_t(self, point_w_t):
-        tf_b_w = np.reshape(self.tf_b_w.toVector(), (4,4))
-        point_b_t = tf_b_w.dot(point_w_t)
-        return point_b_t[:3]
+    def get_goal_transformation_with_respect_to_the_station(self):
+        x = 0
+        y = float(input("Enter y value in cm")) / 100
+        z = float(input("Enter z value in cm")) / 100
 
-    def get_target_point(self):
-        y = float(input("Enter y value in cm"))
-        z = float(input("Enter z value in cm"))
-        target_point = [y/100.0, z/100.0]
-        print("target_point", target_point)
-        return target_point
+        # T_sg: Transformation of the GOAL-FRAME (g) with respect to the STATION-FRAME (s)
+        T_sg = almath.Transform(x,y,z)
 
-    def convert_target_point_to_base_frame(self, p_t):
+        return T_sg
 
-        tf_b_w = np.reshape(self.frame_w_origin.toVector(), (4,4))
-        #tf_b_w.r2_c4 += target_point[0]
-        #tf_b_w.r3_c4 += target_point[1]
+    def get_wrist_transformation_with_respect_to_base_to_reach_the_goal(self, T_sg):
+        # T_bg: Transformation of the GOAL-FRAME (g) with respect to the BASE-FRAME (b)
+        T_bg = self.T_bs * T_sg
 
-        target_w = np.ones(4)
-        target_w[0] = 0
-        target_w[1] = target_point[0] 
-        target_w[2] = target_point[1]
-        target_b = tf_b_w.dot(target_w)
-        #print("target_t", target_t)
-        #print("target_b", target_b)
-        return target_b[:3]
+        # To move the tool to the GOAL-FRAME, we have to make the {TOOL-FRAME} = {GOAL-FRAME}
+        T_bt = T_bg
 
-    def move_to_target_point(self, target_delta):
-        target_point_b_t =  self.initial_t_b_t
-        target_point_b_t[1] = target_delta[0]
-        target_point_b_t[2] = target_delta[1]
+        # T_bw: Transformation of the WRIST-FRAME (w) with respect to the BASE-FRAME (b)
+        T_bw = T_bt * self.T_tw
 
-        point_b_wt = self.tf_b_w * self.t_w_t
+        print("T_sg = ", T_sg)
+        print("T_bg = ", T_bg)
+        print("T_bt = ", T_bt)
+        print("T_bw = ", T_bw)
+        return T_bw
 
-        ###### TODO ######
-        target_point_b_w = target_point_b_t - self.t_w_t # not correct
-        x = target_point_b_w[0]
-        y = target_point_b_w[1]
-        z = target_point_b_w[2]
-        
-        next_tf_b_w = almath.Transform().fromPosition(x, y, z, rx, ry, rz)
-        
-        target_point_b_w =  target_point_b_t - next_tf_b_w * self.t_w_t
-        ###### TODO ######
-
-        path_to_p_b, times = self.get_path(p_t)
+    def move(self, T_bw):
         self.enable_arm_stiffness()
-        #self.move_to_origin()
-        # target_b_6D = list(target_b) + [0,0,0]
-        # self.motion_proxy.setPositions('RArm', FRAME_TORSO, target_b_6D, 0.2, 7)
-        self.motion_proxy.positionInterpolation('RArm', FRAME_TORSO, target_path_b, 7, times, True)
-        rospy.sleep(5.0)
+        rospy.sleep(2.0)
+
+        fractionMaxSpeed = 0.2
+        axisMask = 63 # we want to set both the position and the orientation
+        self.motion_proxy.setTransform('RArm', BASE_FRAME_ID, T_bw, fractionMaxSpeed, axisMask)
+
+        rospy.sleep(2.0)
         self.disable_arm_stiffness()
-
-    def move_to_origin(self):
-        #position = [val for val in self.frame_tip_origin.toVector()]
-        #self.motion_proxy.setTransforms('RArm', FRAME_TORSO, position, 0.2, 63)
-        postion = list(self.convert_target_point_to_base_frame([0,0])) + [0,0,0]
-        print(postion)
-        self.motion_proxy.setPositions('RArm', FRAME_TORSO, postion, 0.2, 7)
-        rospy.sleep(5.0)
-
-    def get_path(self, target_point):
-        path = []
-        times = []
-        for i in range(1,11):
-            times.append(0.5*i)
-            target_point_i = [p*0.1*i for p in target_point]
-            target_b = list(self.convert_target_point_to_base_frame(target_point_i)) + [0,0,0]
-            path.append(target_b)
-        print(path)
-        print(times)
-        return [path, times]
 
     def disable_arm_stiffness(self):
         self.motion_proxy.stiffnessInterpolation('RArm', 0.0, 1.0)
@@ -109,14 +92,14 @@ class Drawing_setup_tester():
     def enable_arm_stiffness(self):
         self.motion_proxy.stiffnessInterpolation('RArm', 1.0, 1.0)
 
-
     def head_touch_callback(self, head_touch_event):
         self.front_button_pressed = head_touch_event.button == HeadTouch.buttonFront and head_touch_event.state == HeadTouch.statePressed
         #self.rear_button_pressed = head_touch_event.button == HeadTouch.buttonRear and head_touch_event.state == HeadTouch.statePressed
 
     def main_loop(self):
-        target_delta = tester.get_target_point()
-        self.move_to_target_point(target_delta)
+        T_sg = self.get_goal_transformation_with_respect_to_the_station()
+        T_bw = self.get_wrist_transformation_with_respect_to_base_to_reach_the_goal(T_sg)
+        self.move(T_bw)
 
 if __name__ == '__main__':
     rospy.init_node('drawing_setup_tester', anonymous=True)
