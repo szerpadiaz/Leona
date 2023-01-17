@@ -1,4 +1,4 @@
- #!/usr/bin/env python
+#!/usr/bin/env python
 ## Example to setup the frameworks for the canvas
 
 from turtle import position
@@ -9,6 +9,7 @@ import numpy as np
 import almath
 from naoqi import ALProxy
 from naoqi_bridge_msgs.msg import HeadTouch
+import math
 
 # Naming convention:
 # - BASE-FRAME    : the frame attached to the NAO's Torso (in our case is fixed, the robot is not moving)
@@ -49,11 +50,7 @@ class Drawing_setup_tester():
         self.T_bs = T_bw * T_ws
         
 
-    def get_goal_transformation_with_respect_to_the_station(self):
-        x = 0
-        y = float(input("Enter y value in cm")) / 100
-        z = float(input("Enter z value in cm")) / 100
-
+    def get_goal_transformation_with_respect_to_the_station(self, x, y, z):
         # T_sg: Transformation of the GOAL-FRAME (g) with respect to the STATION-FRAME (s)
         T_sg = almath.Transform(x,y,z)
 
@@ -75,16 +72,10 @@ class Drawing_setup_tester():
         print("T_bw = ", T_bw)
         return T_bw
 
-    def move(self, T_bw):
-        self.enable_arm_stiffness()
-        rospy.sleep(2.0)
-
+    def move(self, T_bw_as_vector_list):
         fractionMaxSpeed = 0.2
         axisMask = 63 # we want to set both the position and the orientation
-        self.motion_proxy.setTransform('RArm', BASE_FRAME_ID, T_bw, fractionMaxSpeed, axisMask)
-
-        rospy.sleep(2.0)
-        self.disable_arm_stiffness()
+        self.motion_proxy.setTransform("RArm", BASE_FRAME_ID, T_bw_as_vector_list, fractionMaxSpeed, axisMask)
 
     def disable_arm_stiffness(self):
         self.motion_proxy.stiffnessInterpolation('RArm', 0.0, 1.0)
@@ -97,16 +88,38 @@ class Drawing_setup_tester():
         #self.rear_button_pressed = head_touch_event.button == HeadTouch.buttonRear and head_touch_event.state == HeadTouch.statePressed
 
     def main_loop(self):
-        T_sg = self.get_goal_transformation_with_respect_to_the_station()
+        x = 0
+        y = float(input("Enter y value in cm")) / 100
+        z = float(input("Enter z value in cm")) / 100
+
+        T_bw_as_vector_list = []
+
+        length = math.sqrt(x**2 + y**2 + z**2)
+        for i in range(1, int(length*100) + 1):
+            xi = x /length * i
+            yi = y /length * i
+            zi = z /length * i
+            T_sg = self.get_goal_transformation_with_respect_to_the_station(xi, yi, zi)
+            T_bw = self.get_wrist_transformation_with_respect_to_base_to_reach_the_goal(T_sg)
+            T_bw_as_vector_list.append(T_bw.toVector())
+        
+        T_sg = self.get_goal_transformation_with_respect_to_the_station(x, y, z)
         T_bw = self.get_wrist_transformation_with_respect_to_base_to_reach_the_goal(T_sg)
-        self.move(T_bw)
+        T_bw_as_vector_list.append(T_bw.toVector())
+        
+        print(T_bw_as_vector_list)
+        self.move(T_bw_as_vector_list)
 
 if __name__ == '__main__':
-    rospy.init_node('drawing_setup_tester', anonymous=True)
+    rospy.init_node('drawing_setup_example', anonymous=True)
     tester = Drawing_setup_tester()
+    tester.enable_arm_stiffness()
+    rospy.sleep(2.0)
     try:
         while not rospy.is_shutdown():
             tester.main_loop()
             
     except rospy.ROSInterruptException:
-        pass        
+        pass
+
+    #self.disable_arm_stiffness()     
