@@ -8,7 +8,7 @@
   <arg name="nao_ip" default="$(optenv NAO_IP 127.0.0.1)" />
   <arg name="nao_port" default="$(optenv NAO_PORT 9559)" />
 
-  <node pkg="leonao" type="picture_taker.py" name="picture_taker" required="true" args="$(arg nao_ip) $(arg nao_port)" output="screen"/>
+  <node pkg="leonao" type="test_picture_taker.py" name="picture_taker" required="true" args="$(arg nao_ip) $(arg nao_port)" output="screen"/>
 
   <include file="$(find nao_apps)/launch/tactile.launch" />
 </launch>
