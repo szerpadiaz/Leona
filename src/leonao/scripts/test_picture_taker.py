@@ -1,14 +1,12 @@
  #!/usr/bin/env python
 ## Example to setup the frameworks for the canvas
 
-from turtle import position
-import rospy
+#import rospy
 import os
 import numpy as np
 
-import almath
-from naoqi import ALProxy
-from naoqi_bridge_msgs.msg import HeadTouch
+
+#from naoqi_bridge_msgs.msg import HeadTouch
 
 import cv2
 import numpy as np
@@ -17,8 +15,11 @@ import os
 
 import cv2
 import matplotlib.pyplot as plt
-from face_detector import FaceDetector
 
+USE_MEDIA_PIPE = False
+
+if USE_MEDIA_PIPE:
+    from face_detector import FaceDetector
 # The picture taker module is responsible for taking pictures
 ## The module should provide for the following tasks as seperate functions:
 ## Tell the model that the picture will be taken
@@ -68,8 +69,13 @@ class pictureTaker:
 
         # Analyze the picture and return the result
         # try to find a face in the picture
-        faceDetector = FaceDetector()
-        bbox, kps = faceDetector.detect_face(img)
+        if USE_MEDIA_PIPE:
+            faceDetector = FaceDetector()
+            bbox, _ = faceDetector.detect_face(img)
+            print(bbox)
+            print(type(bbox))
+        else:
+            bbox = np.array((272, 251, 195, 195))
         if (bbox == None).any():
             print("No face found in picture")
             return "Error: No face found in picture", None
@@ -129,14 +135,15 @@ class pictureTaker:
         self.currentImageFromStream = img_msg #TODO: Check for timing issues
 
 if __name__ == '__main__':
-    rospy.init_node('top_viewer', anonymous=False)
-    pt = pictureTaker(local = False)
-    try:
-        while not rospy.is_shutdown():
-            pt.main_loop()
+    #rospy.init_node('top_viewer', anonymous=False)
+    pt = pictureTaker(local = True)
+    pt.main_loop()
+    # try:
+    #     while not rospy.is_shutdown():
+    #         pt.main_loop()
             
-    except rospy.ROSInterruptException:
-        pass        
+    # except rospy.ROSInterruptException:
+    #     pass        
 
 
 
