@@ -4,7 +4,6 @@
 from turtle import position
 import rospy
 import os
-import numpy as np
 
 import almath
 from naoqi import ALProxy
@@ -58,7 +57,7 @@ class pictureTaker:
             # Convert raw image data to cv mat BGR8
              img = self.bridge.imgmsg_to_cv2(self.currentImageFromStream, desired_encoding='bgr8')
              cv2.imwrite(path, img)  
-             return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+             return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     def analyzePicture(self, img, showAnalysis:bool = False):
         # Show the picture with pyplot if showAnalysis is True
         if showAnalysis:
