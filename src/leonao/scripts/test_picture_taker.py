@@ -3,7 +3,6 @@
 
 #import rospy
 import os
-import numpy as np
 
 
 #from naoqi_bridge_msgs.msg import HeadTouch
