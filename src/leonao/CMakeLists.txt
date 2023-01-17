@@ -126,3 +126,9 @@ catkin_install_python(PROGRAMS
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+INCLUDE_DIRECTORIES("/home/hrsa/eigen-3.4.0/")
+
+find_package(orocos_kdl REQUIRED)
+add_executable(inv_kin src/inv_kinematic.cpp)
+target_link_libraries(inv_kin ${orocos_kdl_LIBRARIES})
