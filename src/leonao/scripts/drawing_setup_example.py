@@ -1,4 +1,4 @@
- #!/usr/bin/env python
+#!/usr/bin/env python
 ## Example to setup the frameworks for the canvas
 
 from turtle import position

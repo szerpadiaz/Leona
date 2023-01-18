@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <iostream>
 
+#include <kdl_parser/kdl_parser.hpp>
+
 class InvKinematic
 {
 public:
