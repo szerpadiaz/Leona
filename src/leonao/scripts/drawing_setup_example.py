@@ -10,6 +10,7 @@ import almath
 from naoqi import ALProxy
 from naoqi_bridge_msgs.msg import HeadTouch
 import math
+import motion
 
 # Naming convention:
 # - BASE-FRAME    : the frame attached to the NAO's Torso (in our case is fixed, the robot is not moving)
@@ -19,7 +20,7 @@ import math
 # - GOAL-FRAME    : the frame indicating where the tip of the marker should move to
 
 TIP_POSITION_WITH_RESPECT_TO_W = [0.08,0.0,0.035]
-BASE_FRAME_ID = 0 # For TORSO
+BASE_FRAME_ID = motion.FRAME_TORSO
 
 class Drawing_setup_tester():
     def __init__(self):
@@ -31,6 +32,8 @@ class Drawing_setup_tester():
         self.front_button_pressed = False
 
         self.init_tool_and_station_transformations()
+
+        self.previous_point = [0,0,0]
 
     def init_tool_and_station_transformations(self):
         # T_wt: transformation of the TOOL-FRAME (t) with respect to the WRIST-FRAME (w)
@@ -66,16 +69,21 @@ class Drawing_setup_tester():
         # T_bw: Transformation of the WRIST-FRAME (w) with respect to the BASE-FRAME (b)
         T_bw = T_bt * self.T_tw
 
-        print("T_sg = ", T_sg)
-        print("T_bg = ", T_bg)
-        print("T_bt = ", T_bt)
-        print("T_bw = ", T_bw)
+        # print("T_sg = ", T_sg)
+        # print("T_bg = ", T_bg)
+        # print("T_bt = ", T_bt)
+        # print("T_bw = ", T_bw)
         return T_bw
 
     def move(self, T_bw_as_vector_list):
-        fractionMaxSpeed = 0.2
-        axisMask = 63 # we want to set both the position and the orientation
-        self.motion_proxy.setTransform("RArm", BASE_FRAME_ID, T_bw_as_vector_list, fractionMaxSpeed, axisMask)
+        time_per_move = 1
+        times = [time_per_move * (i+1) for i in range(len(T_bw_as_vector_list))]
+        
+        print(times)
+        #fractionMaxSpeed = 0.2
+        # axisMask = almath.AXIS_MASK_ALL # we want to set both the position and the orientation
+        axisMask = almath.AXIS_MASK_VEL
+        self.motion_proxy.transformInterpolations("RArm", BASE_FRAME_ID, T_bw_as_vector_list, axisMask, times)
 
     def disable_arm_stiffness(self):
         self.motion_proxy.stiffnessInterpolation('RArm', 0.0, 1.0)
@@ -88,24 +96,25 @@ class Drawing_setup_tester():
         #self.rear_button_pressed = head_touch_event.button == HeadTouch.buttonRear and head_touch_event.state == HeadTouch.statePressed
 
     def main_loop(self):
-        x = 0
+        x = float(input("Enter x value in cm")) / 100
         y = float(input("Enter y value in cm")) / 100
         z = float(input("Enter z value in cm")) / 100
 
         T_bw_as_vector_list = []
-
-        length = math.sqrt(x**2 + y**2 + z**2)
-        for i in range(1, int(length*100) + 1):
-            xi = x /length * i
-            yi = y /length * i
-            zi = z /length * i
+        length = math.sqrt((x-self.previous_point[0])**2 + (y-self.previous_point[1])**2 + (z-self.previous_point[2])**2)*100
+        for i in range(1, int(length) + 1):
+            xi = (x - self.previous_point[0]) /length * i + self.previous_point[0]
+            yi = (y - self.previous_point[1]) /length * i + self.previous_point[1]
+            zi = (z - self.previous_point[2]) /length * i + self.previous_point[2]
+            print(xi,yi,zi)
             T_sg = self.get_goal_transformation_with_respect_to_the_station(xi, yi, zi)
             T_bw = self.get_wrist_transformation_with_respect_to_base_to_reach_the_goal(T_sg)
-            T_bw_as_vector_list.append(T_bw.toVector())
-        
+            T_bw_as_vector_list.append(list(T_bw.toVector()))
+        self.previous_point = [x,y,z]
+
         T_sg = self.get_goal_transformation_with_respect_to_the_station(x, y, z)
         T_bw = self.get_wrist_transformation_with_respect_to_base_to_reach_the_goal(T_sg)
-        T_bw_as_vector_list.append(T_bw.toVector())
+        T_bw_as_vector_list.append(list(T_bw.toVector()))
         
         print(T_bw_as_vector_list)
         self.move(T_bw_as_vector_list)
@@ -115,6 +124,7 @@ if __name__ == '__main__':
     tester = Drawing_setup_tester()
     tester.enable_arm_stiffness()
     rospy.sleep(2.0)
+
     try:
         while not rospy.is_shutdown():
             tester.main_loop()
