@@ -10,5 +10,5 @@
 
   <node pkg="leonao" type="test_picture_taker.py" name="test_picture_taker" required="true" args="$(arg nao_ip) $(arg nao_port)" output="screen"/>
 
-  <!-- <include file="$(find nao_apps)/launch/tactile.launch" /> -->
+  <include file="$(find nao_apps)/launch/tactile.launch" />
 </launch>
