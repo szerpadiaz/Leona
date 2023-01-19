@@ -1,26 +1,35 @@
 #!/usr/bin/env python
+
+import os 
 from pykdl_utils.kdl_parser import kdl_tree_from_urdf_model
 from urdf_parser_py.urdf import URDF
-from PyKDL import *#Chain, Tree
+from PyKDL import * #Chain, Tree
 import rospy
+
+import motion
+import almath
+from naoqi import ALProxy
+import numpy as np
 
 # path to URDF file
 #path_to_urdf_file = "/opt/ros/kinetic/share/nao_description/urdf/nao_robot_v4_structure.urdf.xacro"
+
+ARM_JOINT_NAMES  = ["RShoulderRoll", "RShoulderPitch", "RElbowYaw", "RElbowRoll", "RWristYaw"] #"RHand"
 
 class InverseKinematics:
     def __init__(self):
         self.create_tree()
 
     def create_tree(self):
-    # get URDF model from parameter server
-    urdf_str = rospy.get_param("robot_description")
-    # create kdl tree from URDF
-    robot = URDF.from_xml_string(urdf_str)
+        # get URDF model from parameter server
+        urdf_str = rospy.get_param("robot_description")
+        # create kdl tree from URDF
+        robot = URDF.from_xml_string(urdf_str)
         self.kdl_tree = kdl_tree_from_urdf_model(robot)
-    # check if the tree is created successfully
+        # check if the tree is created successfully
         if self.kdl_tree is None:
-        rospy.logerr("Failed to create KDL tree.")
-    else:
+            rospy.logerr("Failed to create KDL tree.")
+        else:
             rospy.loginfo("Chain created successfully.")
 
     def create_chain(self, base_link, end_link):
@@ -92,7 +101,43 @@ class InverseKinematics:
         joints_angles = joints_array
         return joints_angles
             
+
+class Motion_tester():
+    def __init__(self):
+        robot_ip=str(os.getenv("NAO_IP"))
+        robot_port=int(9559)
+        self.motion_proxy = ALProxy("ALMotion", robot_ip, robot_port)
+        self.arm_name = "RArm"
+        self.arm_joints_names = self.motion_proxy.getBodyNames(self.arm_name) # should be equal to ARM_JOINT_NAMES
+        self.arm_joints_limits = self.motion_proxy.getLimits(self.arm_name)
         
+        print("arm_joints", self.arm_joints_names) #str(arm_joints)
+        print("ARM_JOINT_NAMES: ", ARM_JOINT_NAMES)
+        self.print_joints_limits(self.arm_joints_names, self.arm_joints_limits)
+
+    def disable_arm_stiffness(self):
+        self.motion_proxy.stiffnessInterpolation(self.arm_name, 0.0, 1.0)
+
+    def enable_arm_stiffness(self):
+        self.motion_proxy.stiffnessInterpolation(self.arm_name, 1.0, 1.0)
+
+    def get_arm_end_position(self):
+        position6d = self.motion_proxy.getPosition(self.arm_name, motion.FRAME_TORSO, True)
+        return position6d
+    
+    def get_arm_joints(self):
+        sensorAngles = self.motion_proxy.getAngles(self.arm_joints_names, True)
+        return sensorAngles
+
+    def print_joints_limits(self, names, limits):
+        for i in range(0,len(limits)):
+            print(names[i], ":", \
+                "minAngle", limits[i][0],\
+                "maxAngle", limits[i][1],\
+                "maxVelocity", limits[i][2],\
+                "maxTorque", limits[i][3])
+
+
 def main():
     rospy.init_node('nao_kdl', anonymous=True)
     rate = rospy.Rate(10) # 10hz
@@ -101,6 +146,16 @@ def main():
     base_link = 'torso'
     end_link = 'r_wrist'
     arm_chain = ik.create_chain(base_link, end_link)
+    
+    motion_tester = Motion_tester()
+    measured_position6D = motion_tester.get_arm_end_position()
+    measured_joints = motion_tester.get_arm_joints()
+    print("measured_joints: ", measured_joints)
+    print("measured_position6D: ", measured_position6D)
+
+    calculated_position6D = ik.get_end_link_position(arm_chain, measured_joints)
+    print("calculated_position6D: ", calculated_position6D)
+
     while not rospy.is_shutdown():
         # do any other calculations here
         rate.sleep()
