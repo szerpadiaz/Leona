@@ -41,6 +41,7 @@ class pictureTaker:
         self.minBrightness = 100
         self.maxBrightness = 200
         self.minContrast = 50
+        self.front_button_pressed = False
         # Might have to change later
         if not self.local:
             import rospy
@@ -106,16 +107,19 @@ class pictureTaker:
                         break
                     if bbox == "":
                         continue
+                    bbox = bbox.replace("[  ", "")
+                    bbox = bbox.replace("[ ", "")
                     bbox = bbox.replace("[", "")
                     bbox = bbox.replace("]", "")
                     bbox = bbox.replace("  ", " ")
                     bbox = bbox.split(" ")
+                    print(bbox)
                     bbox = [int(i) for i in bbox]
                     bbox = np.array(bbox)
                     print(bbox)
 
         if (bbox == None).any():
-            print("No face found in picture")
+            self.speak("I could not see your face, there is probably too little contrast.")
             return "Error: No face found in picture", None
         
         # Check if the bounding box in bbox is large enough
@@ -128,7 +132,6 @@ class pictureTaker:
         #print(f'Face is {bbox[2]}x{bbox[3]} pixels, thats {bbox[2]/imgWidth*100}% of the width and {bbox[3]/imgHeight*100}% of the height')
 
         if bbox[2] < bboxMinSize or bbox[3] < bboxMinSize:
-            print("Face too small, please come closer")
             self.speak("Face too small, please come closer")
             return "Error: Face too small, please come closer", None
 
@@ -153,12 +156,13 @@ class pictureTaker:
         if faceContrast < self.minContrast:
             self.speak("Face too little contrast, try to get more contrast")
             return "Error: Face too little contrast, try to get more contrast", None
-        print("All good!")
+        
+        self.speak("Looks good!")
         return "Success", img
 
     def speak(self, text):
         print(text)
-        self.tts(text)
+        self.tts.say(text)
         #os.system(f'say "{text}"')
 
     def main_loop(self):
@@ -167,7 +171,7 @@ class pictureTaker:
             rospy.sleep(0.2)
         self.speak("Taking a picture in 3, 2, 1 - smile!")
         img = self.takePicture("picture_to_analyze.jpg")
-        analyzePictureResponse = self.analyzePicture(img, showAnalysis= True)
+        analyzePictureResponse, img = self.analyzePicture(img, showAnalysis= True)
         if analyzePictureResponse == "Success":
             # Start creating the stylized image
             pass
