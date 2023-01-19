@@ -46,13 +46,14 @@ class Handler(FileSystemEventHandler):
             # Taken any action here when a file is modified.
             file = event.src_path
             print("Received modified event - %s.", file)
-            if file[-4:] == ".png":
+            if file[-4:] == ".jpg":
 
                 img = cv2.imread(file)
                 
                 faceDetector = FaceDetector()
                 bbox, _ = faceDetector.detect_face(img)
 
+                print(bbox)
 
                 modifyResultFile(DIRECTORY_TO_WATCH, str(bbox))
 
