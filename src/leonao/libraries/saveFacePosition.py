@@ -57,6 +57,6 @@ class Handler(FileSystemEventHandler):
                 modifyResultFile(DIRECTORY_TO_WATCH, str(bbox))
 
 if __name__ == '__main__':
-    DIRECTORY_TO_WATCH = "watchfolder"
+    DIRECTORY_TO_WATCH = "/home/hrsa/watchfolder"
     w = Watcher(DIRECTORY_TO_WATCH)
     w.run()
