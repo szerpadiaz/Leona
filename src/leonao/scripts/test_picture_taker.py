@@ -3,21 +3,25 @@
 
 import rospy
 import os
-
-
-#from naoqi_bridge_msgs.msg import HeadTouch
-
 import cv2
 import numpy as np
-import os
-
-
-import cv2
 import matplotlib.pyplot as plt
+
+from naoqi import ALProxy
+
+from naoqi_bridge_msgs.msg import HeadTouch
+
 
 USE_MEDIA_PIPE_DIRECT = False
 
 WATCHFOLDER_PATH = "/home/hrsa/watchfolder/"
+
+# Image Rotations: 
+# cv2.ROTATE_90_COUNTERCLOCKWISE
+# cv2.ROTATE_180
+# cv2.ROTATE_90_CLOCKWISE
+
+IMAGE_ROTATION = cv2.ROTATE_90_COUNTERCLOCKWISE
 
 if USE_MEDIA_PIPE_DIRECT:
     from face_detector import FaceDetector
@@ -42,13 +46,17 @@ class pictureTaker:
             import rospy
             from sensor_msgs.msg import Image
             from cv_bridge import CvBridge
-            robot_ip=str(os.getenv("NAO_IP"))
-            robot_port=int(9559)
+            self.robot_ip=str(os.getenv("NAO_IP"))
+            self.robot_port=int(9559)
+
+            self.tts = ALProxy("ALTextToSpeech", self.robot_ip, 9559)
 
             #self.head_sub = rospy.Subscriber('/tactile_touch', HeadTouch, self.head_touch_callback)
             #self.front_button_pressed = False
             self.bridge = CvBridge()
             self.image_sub = rospy.Subscriber("/nao_robot/camera/top/camera/image_raw", Image, self.newImageCallback)
+            self.head_sub = rospy.Subscriber('/tactile_touch', HeadTouch, self.head_touch_callback)
+
             print("initialized")
 
 
@@ -60,6 +68,11 @@ class pictureTaker:
         else:
             # Convert raw image data to cv mat BGR8
             img = self.bridge.imgmsg_to_cv2(self.currentImageFromStream, desired_encoding='bgr8')
+
+            if IMAGE_ROTATION:
+                img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+
             with open(WATCHFOLDER_PATH + "result.txt", "w") as f:
                 f.write("")
             cv2.imwrite(WATCHFOLDER_PATH+path, img)  
@@ -88,10 +101,14 @@ class pictureTaker:
             while bbox == "":
                 with open(WATCHFOLDER_PATH + "result.txt", "r") as f:
                     bbox = f.read()
+                    if bbox == "None":
+                        bbox = np.array(None)
+                        break
                     if bbox == "":
                         continue
                     bbox = bbox.replace("[", "")
                     bbox = bbox.replace("]", "")
+                    bbox = bbox.replace("  ", " ")
                     bbox = bbox.split(" ")
                     bbox = [int(i) for i in bbox]
                     bbox = np.array(bbox)
@@ -141,22 +158,30 @@ class pictureTaker:
 
     def speak(self, text):
         print(text)
+        self.tts(text)
         #os.system(f'say "{text}"')
 
     def main_loop(self):
         # Take a picture with the pictureTaker
-        rospy.sleep(2)
-        img = self.takePicture("tmp_picture.jpg")
+        while not (self.front_button_pressed):
+            rospy.sleep(0.2)
+        self.speak("Taking a picture in 3, 2, 1 - smile!")
+        img = self.takePicture("picture_to_analyze.jpg")
         analyzePictureResponse = self.analyzePicture(img, showAnalysis= True)
+        if analyzePictureResponse == "Success":
+            # Start creating the stylized image
+            pass
+        else:
+            self.speak("Let's try again!")
 
     ################ Running Callbacks ################
 
-   # def head_touch_callback(self, head_touch_event):
-    #    self.front_button_pressed = head_touch_event.button == HeadTouch.buttonFront and head_touch_event.state == HeadTouch.statePressed
+    def head_touch_callback(self, head_touch_event):
+        self.front_button_pressed = head_touch_event.button == HeadTouch.buttonFront and head_touch_event.state == HeadTouch.statePressed
 
     def newImageCallback(self, img_msg):
         
-        print("I received an image")
+        #print("I received an image")
         self.currentImageFromStream = img_msg #TODO: Check for timing issues
 
 if __name__ == '__main__':
