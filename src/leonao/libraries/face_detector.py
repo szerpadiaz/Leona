@@ -22,6 +22,10 @@ class FaceDetector:
             print('[FaceDetection][INFO]: No Face found.')
             return None, None
 
+        if results.detections == None:
+            print('[FaceDetection][INFO]: No Face found.')
+            return None, None
+
         # Get Data from 
         height, width, channels = img.shape
         bb_x = results.detections[0].location_data.relative_bounding_box.xmin
