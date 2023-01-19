@@ -82,6 +82,7 @@ catkin_install_python(PROGRAMS
   scripts/main_controller.py 
   scripts/move_service.py
   scripts/drawing_setup_example.py
+  scripts/test_picture_taker.py
 
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
