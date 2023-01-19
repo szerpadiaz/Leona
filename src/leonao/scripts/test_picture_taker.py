@@ -15,9 +15,11 @@ import os
 import cv2
 import matplotlib.pyplot as plt
 
-USE_MEDIA_PIPE = False
+USE_MEDIA_PIPE_DIRECT = False
 
-if USE_MEDIA_PIPE:
+WATCHFOLDER_PATH = "/home/hrsa/watchfolder/"
+
+if USE_MEDIA_PIPE_DIRECT:
     from face_detector import FaceDetector
 # The picture taker module is responsible for taking pictures
 ## The module should provide for the following tasks as seperate functions:
@@ -58,7 +60,9 @@ class pictureTaker:
         else:
             # Convert raw image data to cv mat BGR8
             img = self.bridge.imgmsg_to_cv2(self.currentImageFromStream, desired_encoding='bgr8')
-            cv2.imwrite("/home/hrsa/Desktop/"+path, img)  
+            with open(WATCHFOLDER_PATH + "result.txt", "w") as f:
+                f.write("")
+            cv2.imwrite(WATCHFOLDER_PATH+path, img)  
             print("Path", os.path.abspath("."), path)
             print("Image saved")
             return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -72,13 +76,27 @@ class pictureTaker:
 
         # Analyze the picture and return the result
         # try to find a face in the picture
-        if USE_MEDIA_PIPE:
+        if USE_MEDIA_PIPE_DIRECT:
             faceDetector = FaceDetector()
             bbox, _ = faceDetector.detect_face(img)
             print(bbox)
             print(type(bbox))
         else:
-            bbox = np.array((100, 100, 100, 100))
+            # Read the result.txt file in watchfolder
+            # The result.txt file contains the result of the face detection
+            bbox = ""
+            while bbox == "":
+                with open(WATCHFOLDER_PATH + "result.txt", "r") as f:
+                    bbox = f.read()
+                    if bbox == "":
+                        continue
+                    bbox = bbox.replace("[", "")
+                    bbox = bbox.replace("]", "")
+                    bbox = bbox.split(" ")
+                    bbox = [int(i) for i in bbox]
+                    bbox = np.array(bbox)
+                    print(bbox)
+
         if (bbox == None).any():
             print("No face found in picture")
             return "Error: No face found in picture", None
