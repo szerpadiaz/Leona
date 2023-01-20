@@ -1,13 +1,12 @@
-# A library providing a class that watches a folder and reads new files as soon as they are there 
+# A function that watches a folder and reads new files as soon as they are there 
 # Then, continues the program
 
-from face_detector import FaceDetector
 import cv2
-
 import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
+from face_detector import FaceDetector
 
 class Watcher():
     def __init__(self, DIRECTORY_TO_WATCH):
@@ -20,19 +19,12 @@ class Watcher():
         self.observer.start()
         try:
             while True:
-                time.sleep(5)
+                time.sleep(5) # This is not the polling time, so 5s is not slowing us down
         except:
             self.observer.stop()
             print("Error")
 
         self.observer.join()
-
-# modify result.txt with the answer
-def modifyResultFile(DIRECTORY_TO_WATCH, result):
-    with open(DIRECTORY_TO_WATCH + "/" + "result.txt", "w") as f:
-        f.write(result)
-
-
 
 class Handler(FileSystemEventHandler):
 
@@ -40,22 +32,17 @@ class Handler(FileSystemEventHandler):
     def on_any_event(event):
         if event.is_directory:
             return None
-            
 
         elif event.event_type == 'modified':
-            # Taken any action here when a file is modified.
             file = event.src_path
             print("Received modified event - %s.", file)
             if file[-4:] == ".jpg":
-
                 img = cv2.imread(file)
-                
                 faceDetector = FaceDetector()
                 bbox, _ = faceDetector.detect_face(img)
-
                 print(bbox)
-
-                modifyResultFile(DIRECTORY_TO_WATCH, str(bbox))
+                with open(DIRECTORY_TO_WATCH + "/" + "result.txt", "w") as f:
+                    f.write(str(bbox))
 
 if __name__ == '__main__':
     DIRECTORY_TO_WATCH = "/home/hrsa/watchfolder"
