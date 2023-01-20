@@ -127,10 +127,10 @@ class pictureTaker:
         while not (self.front_button_pressed):
             rospy.sleep(0.2)
         self.speak("Taking a picture in 3, 2, 1. Smile!")
-        img = self.takePicture("picture_to_analyze.jpg")
+        img = self.takePicture("detect_face.jpg")
         analyzePictureResponse, img = self.analyzePicture(img, showAnalysis= True)
         if analyzePictureResponse == "Success":
-            # Start creating the stylized image
+            cv2.imwrite(WATCHFOLDER_PATH+"sketch_face.jpg", img) 
             pass
         else:
             self.speak("Let's try again!")
