@@ -69,7 +69,6 @@ class InverseKinematics:
        x, y, z, wx, wy, wz = self.get_end_link_position(chain, joint_angles)
        return almath.Transform.fromPosition(x, y, z, wx, wy, wz)
 
-
     def get_end_link_pose(self, chain, joint_angles):
         # set the values of the joints
         pykdl_joint_array = PyKDL.JntArray(chain.getNrOfJoints())
@@ -93,10 +92,11 @@ class InverseKinematics:
         pose.M = PyKDL.Rotation.RPY(position6d[3],position6d[4],position6d[5])
         return pose
 
-    def get_joints_angles(self, chain, end_effector_pose):
-        # use initial guess from previous value? or all zeros?
-        # joints_angles_initial_guess
+    def get_joints_angles(self, chain, end_effector_pose, joints_angles_initial_guess):
+        # convert initial guess to array
         joints_array_initial_guess = PyKDL.JntArray(chain.getNrOfJoints())
+        for i in range(chain.getNrOfJoints()):
+            joints_array_initial_guess[i] = joints_angles_initial_guess[i]
 
         # Create an FK solver for the chain
         fk_p_solver = PyKDL.ChainFkSolverPos_recursive(chain)
@@ -104,9 +104,22 @@ class InverseKinematics:
         # Create an IK solver for the chain
         ik_v_solver = PyKDL.ChainIkSolverVel_pinv(chain)
         ik_p_solver = PyKDL.ChainIkSolverPos_NR(chain, fk_p_solver, ik_v_solver)
+        # Should we use ChainIkSolverPos_LMA?
+        # check: 
+        #   - https://github.com/orocos/orocos_kinematics_dynamics/blob/master/orocos_kdl/examples/chainiksolverpos_lma_demo.cpp
+        #   - https://github.com/orocos/orocos_kinematics_dynamics/blob/master/orocos_kdl/tests/solvertest.cpp
+        #
+        #   - http://docs.ros.org/en/indigo/api/orocos_kdl/html/classKDL_1_1ChainIkSolverPos__LMA.html
+        #
+        # Consider extra parameters for:
+        #  - Maximum iterations, and e.g. stop at accuracy 1e-6 ?
 
-        # ChainIkSolverPos_NR iksolver1(chain1,fksolver1,iksolver1v,100,1e-6) ?
-        # Maximum100 iterations, stop at accuracy 1e-6 ?
+        # The KDL Ik solver KDL::ChainIkSolverPos_LMA can be construct with a weight matrix. 
+        # You should be able to solve using only the end effector's target position by
+        # setting rotation components weights to 0.
+        #      - http://docs.ros.org/en/kinetic/api/orocos_kdl/html/classKDL_1_1ChainIkSolverPos__LMA.html#a5322326848d618e0ec2af8683344274e
+        #      - http://docs.ros.org/en/kinetic/api/orocos_kdl/html/classKDL_1_1ChainIkSolverPos__LMA.html#details
+        #      - http://docs.ros.org/en/kinetic/api/orocos_kdl/html/chainiksolverpos__lma_8cpp_source.html
 
         # Compute the inverse kinematics
         joints_array = PyKDL.JntArray(chain.getNrOfJoints())
@@ -132,19 +145,26 @@ class Nao_RArm_chain():
         self.arm_chain = self.ik.create_chain(base_link, end_link)
 
         joint = PyKDL.Joint('PenTip')
+        # Shall we just use the existing last joint? RHand?
+        # We might not need a new joint!, e.g.
+        # segment = PyKDL.Segment(frame)
         frame = PyKDL.Frame(PyKDL.Vector(0.08,0.0,0.035))
         segment = PyKDL.Segment('PenTip',joint,frame)
         self.arm_chain.addSegment(segment)
         self.ik.print_chain(self.arm_chain)
+        self.prev_joints_angles = [0]* self.arm_chain.getNrOfJoints()
     
+    def get_joint_angles_from_pose(self, pose):
+        joints_angles = self.ik.get_joints_angles(self.arm_chain, pose)
+        self.prev_joints_angles = joints_angles
+        return joints_angles
+
     def get_angles(self, position6D):
         # Define the desired end-effector pose
         end_effector_pose = self.ik.get_pose(position6D)
-        joints_angles = self.ik.get_joints_angles(self.arm_chain, end_effector_pose)
-        return joints_angles
+        return self.get_joint_angles_from_pose(end_effector_pose)
 
     def get_angles_from_transform(self, transform):
-        
         # Define the desired end-effector pose
         pose = PyKDL.Frame()
         pose.p[0] = transform.r1_c4
@@ -157,8 +177,7 @@ class Nao_RArm_chain():
         pose.M = R
 
         print("get_angles_from_transform: ", pose)
-        joints_angles = self.ik.get_joints_angles(self.arm_chain, pose)
-        return joints_angles
+        return self.get_joint_angles_from_pose(pose)
 
     def get_position(self, angles):
         position6D = self.ik.get_end_link_position(self.arm_chain, angles)
