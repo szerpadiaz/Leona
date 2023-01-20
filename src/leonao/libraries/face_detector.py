@@ -116,7 +116,7 @@ class FaceDetector:
         out_img = img.copy()
         out_img[mask] = replacement_color
 
-        return out_img
+        return out_img, mask
         
     def detect_face_and_crop(self, img):
         """
@@ -158,6 +158,9 @@ class FaceDetector:
         return out, bbox, kps
 
     def detect_crop_bg_removal(self, img, replacement_color=(255,255,255), threshold=0.8):
+        """
+        Method that combines everything. Face Detection, Crop/Pad, BG removal
+        """
         img_crop, kps, bbox = self.detect_face_and_crop(img)
-        img_crop_bgrem = self.remove_background(img_crop, replacement_color=replacement_color, threshold=threshold)
+        img_crop_bgrem, mask = self.remove_background(img_crop, replacement_color=replacement_color, threshold=threshold)
         return img_crop_bgrem, kps
