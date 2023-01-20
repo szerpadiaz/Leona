@@ -10,6 +10,7 @@ import motion
 import almath
 from naoqi import ALProxy
 import numpy as np
+import math
 
 #https://www.orocos.org/book/export/html/800.html
 
@@ -53,16 +54,7 @@ class InverseKinematics:
             print(joint_i.getName())
 
     def get_end_link_position(self, chain, joint_angles):
-        # set the values of the joints
-        pykdl_joint_array = PyKDL.JntArray(chain.getNrOfJoints())
-
-        for i in range(chain.getNrOfJoints()):
-            pykdl_joint_array[i] = joint_angles[i]
-
-        # compute end_effector_pose
-        solver = PyKDL.ChainFkSolverPos_recursive(chain) #PyKDL.ChainFkSolverVel_recursive ?
-        end_effector_pose = PyKDL.Frame()
-        solver.JntToCart(pykdl_joint_array, end_effector_pose)
+        end_effector_pose = self.get_end_link_pose(chain, joint_angles)
 
         # convert end_effector_pose into a Positon6D array
         x, y, z = end_effector_pose.p
@@ -73,15 +65,35 @@ class InverseKinematics:
 
         return position6d
 
-    def get_joints_angles(self, chain, position6d):
-        
-        # Define the desired end-effector position
-        end_effector_position = PyKDL.Frame()
-        end_effector_position.p[0] = position6d[0]
-        end_effector_position.p[1] = position6d[1]
-        end_effector_position.p[2] = position6d[2]
-        end_effector_position.M = PyKDL.Rotation.RPY(position6d[3],position6d[4],position6d[5])
+    def get_end_link_transform(self, chain, joint_angles):
+       x, y, z, wx, wy, wz = self.get_end_link_position(chain, joint_angles)
+       return almath.Transform.fromPosition(x, y, z, wx, wy, wz)
 
+
+    def get_end_link_pose(self, chain, joint_angles):
+        # set the values of the joints
+        pykdl_joint_array = PyKDL.JntArray(chain.getNrOfJoints())
+
+        for i in range(chain.getNrOfJoints()):
+            pykdl_joint_array[i] = joint_angles[i]
+
+        # compute end_effector_pose
+        solver = PyKDL.ChainFkSolverPos_recursive(chain) #PyKDL.ChainFkSolverVel_recursive ?
+        end_effector_pose = PyKDL.Frame()
+        solver.JntToCart(pykdl_joint_array, end_effector_pose)
+        #print("end_effector_pose: ", end_effector_pose)
+
+        return end_effector_pose
+
+    def get_pose(self, position6d):
+        pose = PyKDL.Frame()
+        pose.p[0] = position6d[0]
+        pose.p[1] = position6d[1]
+        pose.p[2] = position6d[2]
+        pose.M = PyKDL.Rotation.RPY(position6d[3],position6d[4],position6d[5])
+        return pose
+
+    def get_joints_angles(self, chain, end_effector_pose):
         # use initial guess from previous value? or all zeros?
         # joints_angles_initial_guess
         joints_array_initial_guess = PyKDL.JntArray(chain.getNrOfJoints())
@@ -98,19 +110,17 @@ class InverseKinematics:
 
         # Compute the inverse kinematics
         joints_array = PyKDL.JntArray(chain.getNrOfJoints())
-        ik_status = ik_p_solver.CartToJnt(joints_array_initial_guess, end_effector_position, joints_array)
+        ik_status = ik_p_solver.CartToJnt(joints_array_initial_guess, end_effector_pose, joints_array)
         # ik_p_solver.CartToJnt(q_init,F_dest,q) ?
 
-        if  ik_status >= 0:
-            # The IK solution is stored in the joints_array variable
-            print(joints_array)
-        else:
+        if  ik_status < 0:
             print("IK solution not found")
 
         #convert joint array to list?
         joints_angles = []
         for i in range(chain.getNrOfJoints()):
             joints_angles.append(joints_array[i])
+            #joints_angles.append(joints_array[i] % (2*math.pi))
 
         return joints_angles
             
@@ -128,13 +138,34 @@ class Nao_RArm_chain():
         self.ik.print_chain(self.arm_chain)
     
     def get_angles(self, position6D):
-        joints_angles = self.ik.get_joints_angles(self.arm_chain, position6D)
+        # Define the desired end-effector pose
+        end_effector_pose = self.ik.get_pose(position6D)
+        joints_angles = self.ik.get_joints_angles(self.arm_chain, end_effector_pose)
+        return joints_angles
+
+    def get_angles_from_transform(self, transform):
+        
+        # Define the desired end-effector pose
+        pose = PyKDL.Frame()
+        pose.p[0] = transform.r1_c4
+        pose.p[1] = transform.r2_c4
+        pose.p[2] = transform.r3_c4
+
+        R = PyKDL.Rotation(transform.r1_c1, transform.r1_c2, transform.r1_c3, \
+            transform.r2_c1, transform.r2_c2, transform.r2_c3, \
+            transform.r3_c1, transform.r3_c2, transform.r3_c3)
+        pose.M = R
+
+        print("get_angles_from_transform: ", pose)
+        joints_angles = self.ik.get_joints_angles(self.arm_chain, pose)
         return joints_angles
 
     def get_position(self, angles):
         position6D = self.ik.get_end_link_position(self.arm_chain, angles)
         return position6D
 
+    def get_transform(self, angles):
+        return self.ik.get_end_link_transform(self.arm_chain, angles)
 
 class Nao_RArm_motion_proxy():
     def __init__(self):
@@ -186,6 +217,7 @@ def main():
 
     new_joints = arm_chain.get_angles(calculated_position6D)
     new_position6D = arm_chain.get_position(new_joints)
+    print("new_joints", new_joints)
     print("new_position6D: ", new_position6D)
 
     while not rospy.is_shutdown():

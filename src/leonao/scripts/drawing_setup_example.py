@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 ## Example to setup the frameworks for the canvas
 
-from turtle import position
 import rospy
 import os
-import numpy as np
 
 import almath
 from naoqi import ALProxy
 from naoqi_bridge_msgs.msg import HeadTouch
 import math
 import motion
+
+from inv_kinematic import *
 
 # Naming convention:
 # - BASE-FRAME    : the frame attached to the NAO's Torso (in our case is fixed, the robot is not moving)
@@ -24,6 +24,7 @@ BASE_FRAME_ID = motion.FRAME_TORSO
 
 class Drawing_setup_tester():
     def __init__(self):
+        self.arm_chain = Nao_RArm_chain()
         robot_ip=str(os.getenv("NAO_IP"))
         robot_port=int(9559)
         self.motion_proxy = ALProxy("ALMotion", robot_ip, robot_port)
@@ -31,49 +32,29 @@ class Drawing_setup_tester():
         self.head_sub = rospy.Subscriber('/tactile_touch', HeadTouch, self.head_touch_callback)
         self.front_button_pressed = False
 
-        self.init_tool_and_station_transformations()
+        self.init_station_frame()
 
         self.previous_point = [0,0,0]
 
-    def init_tool_and_station_transformations(self):
-        # T_wt: transformation of the TOOL-FRAME (t) with respect to the WRIST-FRAME (w)
-        x = TIP_POSITION_WITH_RESPECT_TO_W[0]
-        y = TIP_POSITION_WITH_RESPECT_TO_W[1]
-        z = TIP_POSITION_WITH_RESPECT_TO_W[2]
-        self.T_wt = almath.Transform(x,y,z)
-
-        # T_tw: transformation of the WRIST-FRAME (w) with respect to the TOOL-FRAME (t)
-        self.T_tw = almath.transformInverse(self.T_wt)
-
+    def init_station_frame(self):
         # T_bs: Transformation of the STATION-FRAME (s) with respect to the BASE-FRAME (b)
-        T_bw = almath.Transform(self.motion_proxy.getTransform("RArm", BASE_FRAME_ID, False))
-        # When this function is called we assume that the tip of the TOOL-FRAME coincides with the STATION-FRAME
-        # {TOOL-FRAME} = {STATION-FRAME}
-        T_ws = self.T_wt
-        self.T_bs = T_bw * T_ws
-        
+        joints_names = self.motion_proxy.getBodyNames("RArm")
+        joints_angles = self.motion_proxy.getAngles(joints_names, True)
+        self.T_bs = self.arm_chain.get_transform(joints_angles)
+        joints_angles2 = self.arm_chain.get_angles_from_transform(self.T_bs)
+        print("joint_angles alproxy:", joints_angles)
+        print("joint_angles inv kin:", joints_angles2)
+        #print("T_bs", self.T_bs)
 
-    def get_goal_transformation_with_respect_to_the_station(self, x, y, z):
+
+    def get_joints_angles(self, x, y, z):
         # T_sg: Transformation of the GOAL-FRAME (g) with respect to the STATION-FRAME (s)
         T_sg = almath.Transform(x,y,z)
 
-        return T_sg
-
-    def get_wrist_transformation_with_respect_to_base_to_reach_the_goal(self, T_sg):
         # T_bg: Transformation of the GOAL-FRAME (g) with respect to the BASE-FRAME (b)
         T_bg = self.T_bs * T_sg
-
-        # To move the tool to the GOAL-FRAME, we have to make the {TOOL-FRAME} = {GOAL-FRAME}
-        T_bt = T_bg
-
-        # T_bw: Transformation of the WRIST-FRAME (w) with respect to the BASE-FRAME (b)
-        T_bw = T_bt * self.T_tw
-
-        # print("T_sg = ", T_sg)
-        # print("T_bg = ", T_bg)
-        # print("T_bt = ", T_bt)
-        # print("T_bw = ", T_bw)
-        return T_bw
+        joints_angles = self.arm_chain.get_angles_from_transform(T_bg)
+        return joints_angles
 
     def move(self, T_bw_as_vector_list):
         time_per_move = 1
@@ -100,35 +81,30 @@ class Drawing_setup_tester():
         y = float(input("Enter y value in cm")) / 100
         z = float(input("Enter z value in cm")) / 100
 
-        T_bw_as_vector_list = []
+        joins_angles_list = []
         length = math.sqrt((x-self.previous_point[0])**2 + (y-self.previous_point[1])**2 + (z-self.previous_point[2])**2)*100
         for i in range(1, int(length) + 1):
             xi = (x - self.previous_point[0]) /length * i + self.previous_point[0]
             yi = (y - self.previous_point[1]) /length * i + self.previous_point[1]
             zi = (z - self.previous_point[2]) /length * i + self.previous_point[2]
-            print(xi,yi,zi)
-            T_sg = self.get_goal_transformation_with_respect_to_the_station(xi, yi, zi)
-            T_bw = self.get_wrist_transformation_with_respect_to_base_to_reach_the_goal(T_sg)
-            T_bw_as_vector_list.append(list(T_bw.toVector()))
+            joins_angles_list.append(self.get_joints_angles(xi, yi, zi))
         self.previous_point = [x,y,z]
 
-        T_sg = self.get_goal_transformation_with_respect_to_the_station(x, y, z)
-        T_bw = self.get_wrist_transformation_with_respect_to_base_to_reach_the_goal(T_sg)
-        T_bw_as_vector_list.append(list(T_bw.toVector()))
+        joins_angles_list.append(self.get_joints_angles(x, y, z))
         
-        print(T_bw_as_vector_list)
-        self.move(T_bw_as_vector_list)
+        print(joins_angles_list)
+        #self.move(T_bw_as_vector_list)
 
 if __name__ == '__main__':
     rospy.init_node('drawing_setup_example', anonymous=True)
     tester = Drawing_setup_tester()
-    tester.enable_arm_stiffness()
-    rospy.sleep(2.0)
+    #tester.enable_arm_stiffness()
+    #rospy.sleep(2.0)
 
     try:
         while not rospy.is_shutdown():
             tester.main_loop()
-            
+            pass
     except rospy.ROSInterruptException:
         pass
 
