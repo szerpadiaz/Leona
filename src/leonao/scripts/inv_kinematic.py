@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os 
+import os
 from pykdl_utils.kdl_parser import kdl_tree_from_urdf_model
 from urdf_parser_py.urdf import URDF
 import PyKDL
@@ -114,8 +114,29 @@ class InverseKinematics:
 
         return joints_angles
             
+class Nao_RArm_chain():
+    def __init__(self):
+        self.ik = InverseKinematics()
+        base_link = 'torso'
+        end_link = 'r_gripper'
+        self.arm_chain = self.ik.create_chain(base_link, end_link)
 
-class Motion_tester():
+        joint = PyKDL.Joint('PenTip')
+        frame = PyKDL.Frame(PyKDL.Vector(0.08,0.0,0.035))
+        segment = PyKDL.Segment('PenTip',joint,frame)
+        self.arm_chain.addSegment(segment)
+        self.ik.print_chain(self.arm_chain)
+    
+    def get_angles(self, position6D):
+        joints_angles = self.ik.get_joints_angles(self.arm_chain, position6D)
+        return joints_angles
+
+    def get_position(self, angles):
+        position6D = self.ik.get_end_link_position(self.arm_chain, angles)
+        return position6D
+
+
+class Nao_RArm_motion_proxy():
     def __init__(self):
         robot_ip=str(os.getenv("NAO_IP"))
         robot_port=int(9559)
@@ -127,17 +148,17 @@ class Motion_tester():
         print("arm_joints", self.arm_joints_names)
         self.print_joints_limits(self.arm_joints_names, self.arm_joints_limits)
 
-    def disable_arm_stiffness(self):
+    def disable_stiffness(self):
         self.motion_proxy.stiffnessInterpolation(self.arm_name, 0.0, 1.0)
 
-    def enable_arm_stiffness(self):
+    def enable_stiffness(self):
         self.motion_proxy.stiffnessInterpolation(self.arm_name, 1.0, 1.0)
 
-    def get_arm_end_position(self):
+    def get_position(self):
         position6d = self.motion_proxy.getPosition(self.arm_name, motion.FRAME_TORSO, True)
         return position6d
     
-    def get_arm_joints(self):
+    def get_angles(self):
         sensorAngles = self.motion_proxy.getAngles(self.arm_joints_names, True)
         return sensorAngles
 
@@ -153,30 +174,18 @@ class Motion_tester():
 def main():
     rospy.init_node('nao_kdl', anonymous=True)
     rate = rospy.Rate(10) # 10hz
+    arm_chain = Nao_RArm_chain()
+    arm_motion_proxy = Nao_RArm_motion_proxy()
 
-    ik = InverseKinematics()
-    base_link = 'torso'
-    end_link = 'r_gripper'
-    arm_chain = ik.create_chain(base_link, end_link)
-
-    joint = PyKDL.Joint('PenTip')
-    frame = PyKDL.Frame(PyKDL.Vector(0.08,0.0,0.035))
-    segment = PyKDL.Segment('PenTip',joint,frame)
-    arm_chain.addSegment(segment)
-
-    ik.print_chain(arm_chain)
-
-    motion_tester = Motion_tester()
-    measured_position6D = motion_tester.get_arm_end_position()
-    measured_joints = motion_tester.get_arm_joints()
+    measured_position6D = arm_motion_proxy.get_position()
+    measured_joints = arm_motion_proxy.get_angles()
+    calculated_position6D = arm_chain.get_position(measured_joints)
     print("measured_joints: ", measured_joints)
     print("measured_position6D: ", measured_position6D)
-
-    calculated_position6D = ik.get_end_link_position(arm_chain, measured_joints)
     print("calculated_position6D: ", calculated_position6D)
 
-    new_joints = ik.get_joints_angles(arm_chain, calculated_position6D)
-    new_position6D = ik.get_end_link_position(arm_chain, new_joints)
+    new_joints = arm_chain.get_angles(calculated_position6D)
+    new_position6D = arm_chain.get_position(new_joints)
     print("new_position6D: ", new_position6D)
 
     while not rospy.is_shutdown():
