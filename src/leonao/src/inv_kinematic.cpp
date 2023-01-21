@@ -67,14 +67,12 @@ class InverseKinematics {
             solver.JntToCart(pykdl_joint_array, end_effector_pose);
 
             std::vector<double> position6D;
-            std::cout << "end_effector_pose.p[0]" << end_effector_pose.p[0] << std::endl;
             position6D.push_back(end_effector_pose.p[0]);
             position6D.push_back(end_effector_pose.p[1]);
             position6D.push_back(end_effector_pose.p[2]);
             double wx, wy, wz;
             end_effector_pose.M.GetRPY(wx, wy, wz);
             position6D.push_back(wx);
-            std::cout << "wx" << wx << std::endl;
             position6D.push_back(wy);
             position6D.push_back(wz);
             return position6D;
@@ -94,18 +92,18 @@ class InverseKinematics {
             solver.JntToCart(pykdl_joint_array, end_effector_pose);
 
             std::vector<double> transform;
-            transform.push_back(end_effector_pose.M[0])
-            transform.push_back(end_effector_pose.M[1])
-            transform.push_back(end_effector_pose.M[2])
-            transform.push_back(end_effector_pose.p[0])
-            transform.push_back(end_effector_pose.M[3])
-            transform.push_back(end_effector_pose.M[4])
-            transform.push_back(end_effector_pose.M[5])
-            transform.push_back(end_effector_pose.p[1])
-            transform.push_back(end_effector_pose.M[6])
-            transform.push_back(end_effector_pose.M[7])
-            transform.push_back(end_effector_pose.M[8])
-            transform.push_back(end_effector_pose.p[2])
+            transform.push_back(end_effector_pose.M(0,0));
+            transform.push_back(end_effector_pose.M(0,1));
+            transform.push_back(end_effector_pose.M(0,2));
+            transform.push_back(end_effector_pose.p[0]);
+            transform.push_back(end_effector_pose.M(1,0));
+            transform.push_back(end_effector_pose.M(1,1));
+            transform.push_back(end_effector_pose.M(1,2));
+            transform.push_back(end_effector_pose.p[1]);
+            transform.push_back(end_effector_pose.M(2,0));
+            transform.push_back(end_effector_pose.M(2,1));
+            transform.push_back(end_effector_pose.M(2,2));
+            transform.push_back(end_effector_pose.p[2]);
              return transform;
         }
 
@@ -183,7 +181,6 @@ class InverseKinematics {
             std::vector<double> joints_angles;
             for (int i = 0; i < chain.getNrOfJoints(); i++) {
                 joints_angles.push_back(joints_array(i));
-                std::cout << "joints_angles: i="<< i << "   " <<joints_angles[i] << std::endl;
             }
 
             return joints_angles;
@@ -244,7 +241,7 @@ class Nao_RArm_chain {
             return ik->get_end_link_position(arm_chain, angles);
         }
 
-        AL::Transform get_transform(std::vector<double> angles) {
+        std::vector<double> get_transform(std::vector<double> angles) {
              return ik->get_end_link_transform(arm_chain, angles);
         }
 
@@ -267,11 +264,7 @@ bool getAnglesCallback(leonao::Nao_RArm_chain_get_angles::Request& req,
     
     std::vector<double> angles = arm_chain_p->get_angles(position6D);
     std::vector<double> new_position6D = arm_chain_p->ik->get_end_link_position(arm_chain_p->arm_chain, angles);
-    
-    for (int i = 0; i < new_position6D.size(); i++)
-    {
-        std::cout << "new_position6D "<< new_position6D[i] << std::endl;
-    }
+    std::cout << "new_position6D: " << new_position6D[0] << " " << new_position6D[1] << " " << new_position6D[2] << std::endl;
     for (int i = 0; i < angles.size(); i++)
     {
         res.angles.push_back(angles[i]);  // Set the response angles
@@ -289,11 +282,11 @@ bool getTransformCallback(leonao::Nao_RArm_chain_get_transform::Request& req,
         angles.push_back(req.angles[i]);
     }
     
-    std::vector<double> transform = arm_chain_p->get_end_link_transform(angles);
+    std::vector<double> transform = arm_chain_p->get_transform(angles);
     
     for (int i = 0; i < transform.size(); i++)
     {
-        res.angles.push_back(angles[i]);
+        res.transform.push_back(transform[i]);
     }
     
     return true;
@@ -306,8 +299,8 @@ int main(int argc, char **argv) {
 
     arm_chain_p = new Nao_RArm_chain();
 
-    ros::ServiceServer service = nh.advertiseService("Nao_RArm_chain_get_angles", &getAnglesCallback);
-    ros::ServiceServer service = nh.advertiseService("Nao_RArm_chain_get_transform", &getTransformCallback);
+    ros::ServiceServer service_angles = nh.advertiseService("Nao_RArm_chain_get_angles", &getAnglesCallback);
+    ros::ServiceServer service_transform = nh.advertiseService("Nao_RArm_chain_get_transform", &getTransformCallback);
     // Nao_RArm_motion_proxy arm_motion_proxy;
 
     // std::vector<float> measured_position6D = arm_motion_proxy.get_position();

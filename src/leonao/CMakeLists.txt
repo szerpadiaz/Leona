@@ -24,7 +24,9 @@ add_service_files(
     RestEndEffector.srv
     Stiffness.srv
     Nao_RArm_chain_get_angles.srv
+    Nao_RArm_chain_get_transform.srv
 )
+    
 
 generate_messages(DEPENDENCIES std_msgs)
 catkin_package(CATKIN_DEPENDS message_runtime)
