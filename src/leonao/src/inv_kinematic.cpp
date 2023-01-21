@@ -11,7 +11,9 @@
 // #include <almath/tools/almathio.h>
 // #include <almath/tools/altrigonometry.h>
 
-#include <leonao/Nao_RArm_chain_get_angles.h>  // Include the service message header
+// Include the service message header
+#include <leonao/Nao_RArm_chain_get_angles.h>  
+#include <leonao/Nao_RArm_chain_get_transform.h>
 
 class InverseKinematics {
     public:
@@ -77,10 +79,36 @@ class InverseKinematics {
             position6D.push_back(wz);
             return position6D;
         }
-        // // AL::Transform get_end_link_transform(const KDL::Chain& chain, const KDL::JntArray& joint_angles) {
-        // //     std::vector<double> position6d = get_end_link_position(chain, joint_angles);
-        // //     return AL::Transform::fromPosition(position6d[0], position6d[1], position6d[2], position6d[3], position6d[4], position6d[5]);
-        // // }
+        std::vector<double> get_end_link_transform(const KDL::Chain& chain, std::vector<double>& joint_angles) {
+            // set the values of the joints
+            KDL::JntArray pykdl_joint_array(chain.getNrOfJoints());
+
+            for (unsigned int i = 0; i < chain.getNrOfJoints(); i++)
+            {
+                pykdl_joint_array(i) = joint_angles[i];
+            }
+
+            // compute end_effector_pose
+            KDL::ChainFkSolverPos_recursive solver(chain);
+            KDL::Frame end_effector_pose;
+            solver.JntToCart(pykdl_joint_array, end_effector_pose);
+
+            std::vector<double> transform;
+            transform.push_back(end_effector_pose.M[0])
+            transform.push_back(end_effector_pose.M[1])
+            transform.push_back(end_effector_pose.M[2])
+            transform.push_back(end_effector_pose.p[0])
+            transform.push_back(end_effector_pose.M[3])
+            transform.push_back(end_effector_pose.M[4])
+            transform.push_back(end_effector_pose.M[5])
+            transform.push_back(end_effector_pose.p[1])
+            transform.push_back(end_effector_pose.M[6])
+            transform.push_back(end_effector_pose.M[7])
+            transform.push_back(end_effector_pose.M[8])
+            transform.push_back(end_effector_pose.p[2])
+             return transform;
+        }
+
         // void get_pose(const KDL::Chain& chain, const KDL::JntArray& q_init, const AL::Transform& target, KDL::JntArray& q_out) {
         //     // create solver
         //     KDL::ChainIkSolverPos_LMA ik_solver(chain);
@@ -216,9 +244,9 @@ class Nao_RArm_chain {
             return ik->get_end_link_position(arm_chain, angles);
         }
 
-        // AL::Transform get_transform(double* angles) {
-        //     return ik->get_end_link_transform(arm_chain, angles);
-        // }
+        AL::Transform get_transform(std::vector<double> angles) {
+             return ik->get_end_link_transform(arm_chain, angles);
+        }
 
         InverseKinematics* ik;
         KDL::Chain arm_chain;
@@ -252,6 +280,25 @@ bool getAnglesCallback(leonao::Nao_RArm_chain_get_angles::Request& req,
     return true;
 }
 
+bool getTransformCallback(leonao::Nao_RArm_chain_get_transform::Request& req,
+                       leonao::Nao_RArm_chain_get_transform::Response& res) {
+    
+    std::vector<double> angles;
+    for (int i = 0; i < req.angles.size(); i++)
+    {
+        angles.push_back(req.angles[i]);
+    }
+    
+    std::vector<double> transform = arm_chain_p->get_end_link_transform(angles);
+    
+    for (int i = 0; i < transform.size(); i++)
+    {
+        res.angles.push_back(angles[i]);
+    }
+    
+    return true;
+}
+
 int main(int argc, char **argv) {
     ros::init(argc, argv, "nao_kdl");
     ros::NodeHandle nh;
@@ -260,6 +307,7 @@ int main(int argc, char **argv) {
     arm_chain_p = new Nao_RArm_chain();
 
     ros::ServiceServer service = nh.advertiseService("Nao_RArm_chain_get_angles", &getAnglesCallback);
+    ros::ServiceServer service = nh.advertiseService("Nao_RArm_chain_get_transform", &getTransformCallback);
     // Nao_RArm_motion_proxy arm_motion_proxy;
 
     // std::vector<float> measured_position6D = arm_motion_proxy.get_position();
