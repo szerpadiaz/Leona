@@ -99,11 +99,24 @@ class InverseKinematics:
             joints_array_initial_guess[i] = joints_angles_initial_guess[i]
 
         # Create an FK solver for the chain
-        fk_p_solver = PyKDL.ChainFkSolverPos_recursive(chain)
+        #mask = Eigen.MatrixXd(6,1)
+        #mask << 1,1,1,0,0,0
+        # W could laso be specify as follows:
+        mask = [1, 1, 1, 0, 0, 0]
+        eps_position = 1e-6
+        max_iter = 100
+        eps_joints = 1e-6
+        #t = inspect.signature(PyKDL.ChainIkSolverPos_LMA)
+        #print(t)
+        print(PyKDL.__version__)
+        print(dir(PyKDL.ChainIkSolverPos_LMA))
+        #help(PyKDL.ChainIkSolverPos_LMA)
+        ik_p_solver = PyKDL.ChainIkSolverPos_LMA(chain,eps_position,max_iter,eps_joints)
+        #fk_p_solver = PyKDL.ChainFkSolverPos_recursive(chain)
 
         # Create an IK solver for the chain
-        ik_v_solver = PyKDL.ChainIkSolverVel_pinv(chain)
-        ik_p_solver = PyKDL.ChainIkSolverPos_NR(chain, fk_p_solver, ik_v_solver)
+        #ik_v_solver = PyKDL.ChainIkSolverVel_pinv(chain)
+        #ik_p_solver = PyKDL.ChainIkSolverPos_NR(chain, fk_p_solver, ik_v_solver)
         # Should we use ChainIkSolverPos_LMA?
         # check: 
         #   - https://github.com/orocos/orocos_kinematics_dynamics/blob/master/orocos_kdl/examples/chainiksolverpos_lma_demo.cpp
@@ -138,7 +151,7 @@ class InverseKinematics:
         return joints_angles
             
 class Nao_RArm_chain():
-    def __init__(self):
+    def __init__(self, joints_angles):
         self.ik = InverseKinematics()
         base_link = 'torso'
         end_link = 'r_gripper'
@@ -152,10 +165,10 @@ class Nao_RArm_chain():
         segment = PyKDL.Segment('PenTip',joint,frame)
         self.arm_chain.addSegment(segment)
         self.ik.print_chain(self.arm_chain)
-        self.prev_joints_angles = [0]* self.arm_chain.getNrOfJoints()
+        self.prev_joints_angles = joints_angles
     
     def get_joint_angles_from_pose(self, pose):
-        joints_angles = self.ik.get_joints_angles(self.arm_chain, pose)
+        joints_angles = self.ik.get_joints_angles(self.arm_chain, pose, self.prev_joints_angles)
         self.prev_joints_angles = joints_angles
         return joints_angles
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 ## Example to setup the frameworks for the canvas
 
+from pickle import TRUE
 import rospy
 import os
 
@@ -11,6 +12,8 @@ import math
 import motion
 
 from inv_kinematic import *
+
+from leonao.srv import Nao_RArm_chain_get_angles
 
 # Naming convention:
 # - BASE-FRAME    : the frame attached to the NAO's Torso (in our case is fixed, the robot is not moving)
@@ -24,7 +27,6 @@ BASE_FRAME_ID = motion.FRAME_TORSO
 
 class Drawing_setup_tester():
     def __init__(self):
-        self.arm_chain = Nao_RArm_chain()
         robot_ip=str(os.getenv("NAO_IP"))
         robot_port=int(9559)
         self.motion_proxy = ALProxy("ALMotion", robot_ip, robot_port)
@@ -40,8 +42,12 @@ class Drawing_setup_tester():
         # T_bs: Transformation of the STATION-FRAME (s) with respect to the BASE-FRAME (b)
         joints_names = self.motion_proxy.getBodyNames("RArm")
         joints_angles = self.motion_proxy.getAngles(joints_names, True)
-        self.T_bs = self.arm_chain.get_transform(joints_angles)
-        joints_angles2 = self.arm_chain.get_angles_from_transform(self.T_bs)
+        # self.arm_chain = Nao_RArm_chain(joints_angles)
+        # self.T_bs = self.arm_chain.get_transform(joints_angles)
+        # joints_angles2 = self.arm_chain.get_angles_from_transform(self.T_bs)
+        position6D = self.motion_proxy.getPosition("RArm", motion.FRAME_TORSO, True)
+        print("python position6D: ", position6D)
+        joints_angles2 = self.get_angles_client(position6D)
         print("joint_angles alproxy:", joints_angles)
         print("joint_angles inv kin:", joints_angles2)
         #print("T_bs", self.T_bs)
@@ -95,6 +101,16 @@ class Drawing_setup_tester():
         print(joins_angles_list)
         #self.move(T_bw_as_vector_list)
 
+    def get_angles_client(self, position6D):
+        rospy.wait_for_service('Nao_RArm_chain_get_angles')
+        try:
+            get_angles = rospy.ServiceProxy('Nao_RArm_chain_get_angles', Nao_RArm_chain_get_angles)
+            resp = get_angles(position6D)
+            return resp.angles
+        except rospy.ServiceException as e:
+            print("Service call failed: %s" % e)
+            return []
+
 if __name__ == '__main__':
     rospy.init_node('drawing_setup_example', anonymous=True)
     tester = Drawing_setup_tester()
@@ -103,7 +119,7 @@ if __name__ == '__main__':
 
     try:
         while not rospy.is_shutdown():
-            tester.main_loop()
+            #tester.main_loop()
             pass
     except rospy.ROSInterruptException:
         pass
