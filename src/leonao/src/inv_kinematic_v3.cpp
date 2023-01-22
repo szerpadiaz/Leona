@@ -112,12 +112,13 @@ public:
         }while(iteration < max_iter_for_range_check);
 
         // if solution is found update the prev_joints_angles
-        if (ik_status < 0) {
+        if (ik_status < 0 || iteration >= max_iter_for_range_check) {
             ROS_INFO("Inverse kinematics failed.");
+            return KDL::JntArray();
         } else {
             this->prev_joints_angles = angles;
+            return angles;
         }
-        return angles;
     }
 
     KDL::Frame get_transform(const KDL::JntArray& joints) {
@@ -154,16 +155,19 @@ bool get_angles_callback(leonao::Nao_RArm_chain_get_angles::Request& req,
     for (int i = 0; i < angles.size(); i++)
     {
         res.angles.push_back(angles(i));
+        //Make sure to check n the client if the response.angles is empty!
     }
 
-    // Debug: calculate position with forward kinematics and print it as position6D
-    KDL::Frame transform = arm_chain_p->get_transform(angles);
-    auto x = transform.p[0];
-    auto y = transform.p[1];
-    auto z = transform.p[2];
-    double wx, wy, wz;
-    transform.M.GetRPY(wx, wy, wz);
-    std::cout << "new_position6D: "<< x  << ", " << y << ", " << z << ", " << wx << ", " << wy << ", " << wz << std::endl;  
+    if(angles.size() != 0){
+         // Debug: calculate position with forward kinematics and print it as position6D
+        KDL::Frame transform = arm_chain_p->get_transform(angles);
+        auto x = transform.p[0];
+        auto y = transform.p[1];
+        auto z = transform.p[2];
+        double wx, wy, wz;
+        transform.M.GetRPY(wx, wy, wz);
+        std::cout << "new_position6D: "<< x  << ", " << y << ", " << z << ", " << wx << ", " << wy << ", " << wz << std::endl;     
+    }
 
     return true;
 }
