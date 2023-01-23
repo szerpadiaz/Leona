@@ -7,314 +7,207 @@
 #include <kdl/chainiksolverpos_lma.hpp>
 #include <ros/ros.h>
 #include <urdf/model.h>
-// #include <almath/tools/almath.h>
-// #include <almath/tools/almathio.h>
-// #include <almath/tools/altrigonometry.h>
 
 // Include the service message header
 #include <leonao/Nao_RArm_chain_get_angles.h>  
 #include <leonao/Nao_RArm_chain_get_transform.h>
 
-class InverseKinematics {
-    public:
-        KDL::Tree kdl_tree_;
-        InverseKinematics() {
-            create_tree();
-        }
-        void create_tree() {
-            urdf::Model robot_model;
-            std::string xml_string;
-            ros::param::get("robot_description", xml_string);
-            if (!robot_model.initString(xml_string)) {
-                ROS_ERROR("Failed to parse URDF");
-            }
-            if (!kdl_parser::treeFromUrdfModel(robot_model, kdl_tree_)) {
-                ROS_ERROR("Failed to create KDL tree.");
-            } else {
-                ROS_INFO("Chain created successfully.");
-            }
-        }
-        KDL::Chain create_chain(const std::string& base_link, const std::string& end_link) {
-            KDL::Chain chain;
-            if (!kdl_tree_.getChain(base_link, end_link, chain)) {
-                ROS_ERROR("Failed to create KDL chain.");
-            } else {
-                ROS_INFO("Root link: %s, End link: %s", base_link.c_str(), end_link.c_str());
-                print_chain(chain);
-            }
-            return chain;
-        }
-        void print_chain(const KDL::Chain& chain) {
-            std::cout << "Number of segments: " << chain.getNrOfSegments() << std::endl;
-            std::cout << "Number of joints: " << chain.getNrOfJoints() << std::endl;
-            for (unsigned int i = 0; i < chain.getNrOfSegments(); i++) {
-                std::cout << chain.getSegment(i).getJoint().getName() << std::endl;
-            }
-        }
-
-        std::vector<double> get_end_link_position(const KDL::Chain& chain, const std::vector<double>& joint_angles) {
-             // set the values of the joints
-            KDL::JntArray pykdl_joint_array(chain.getNrOfJoints());
-
-            for (unsigned int i = 0; i < chain.getNrOfJoints(); i++)
-            {
-                pykdl_joint_array(i) = joint_angles[i];
-            }
-
-            // compute end_effector_pose
-            KDL::ChainFkSolverPos_recursive solver(chain);
-            KDL::Frame end_effector_pose;
-            solver.JntToCart(pykdl_joint_array, end_effector_pose);
-
-            std::vector<double> position6D;
-            position6D.push_back(end_effector_pose.p[0]);
-            position6D.push_back(end_effector_pose.p[1]);
-            position6D.push_back(end_effector_pose.p[2]);
-            double wx, wy, wz;
-            end_effector_pose.M.GetRPY(wx, wy, wz);
-            position6D.push_back(wx);
-            position6D.push_back(wy);
-            position6D.push_back(wz);
-            return position6D;
-        }
-        std::vector<double> get_end_link_transform(const KDL::Chain& chain, std::vector<double>& joint_angles) {
-            // set the values of the joints
-            KDL::JntArray pykdl_joint_array(chain.getNrOfJoints());
-
-            for (unsigned int i = 0; i < chain.getNrOfJoints(); i++)
-            {
-                pykdl_joint_array(i) = joint_angles[i];
-            }
-
-            // compute end_effector_pose
-            KDL::ChainFkSolverPos_recursive solver(chain);
-            KDL::Frame end_effector_pose;
-            solver.JntToCart(pykdl_joint_array, end_effector_pose);
-
-            std::vector<double> transform;
-            transform.push_back(end_effector_pose.M(0,0));
-            transform.push_back(end_effector_pose.M(0,1));
-            transform.push_back(end_effector_pose.M(0,2));
-            transform.push_back(end_effector_pose.p[0]);
-            transform.push_back(end_effector_pose.M(1,0));
-            transform.push_back(end_effector_pose.M(1,1));
-            transform.push_back(end_effector_pose.M(1,2));
-            transform.push_back(end_effector_pose.p[1]);
-            transform.push_back(end_effector_pose.M(2,0));
-            transform.push_back(end_effector_pose.M(2,1));
-            transform.push_back(end_effector_pose.M(2,2));
-            transform.push_back(end_effector_pose.p[2]);
-             return transform;
-        }
-
-        // void get_pose(const KDL::Chain& chain, const KDL::JntArray& q_init, const AL::Transform& target, KDL::JntArray& q_out) {
-        //     // create solver
-        //     KDL::ChainIkSolverPos_LMA ik_solver(chain);
-        //     // set solver parameters
-        //     ik_solver.setLambda(0.1);
-        //     ik_solver.setEpsilon(1e-6);
-        //     ik_solver.setMaxIterations(100);
-        //     // create target frame
-        //     KDL::Frame frame_target;
-        //     frame_target.p.x(target.x);
-        //     frame_target.p.y(target.y);
-        //     frame_target.p.z(target.z);
-        //     frame_target.M = KDL::Rotation::Quaternion(target.q0, target.q1, target.q2, target.q3);
-        //     // solve
-        //     int ret = ik_solver.CartToJnt(q_init, frame_target, q_out);
-        //     if (ret < 0) {
-        //         ROS_ERROR("IK failed.");
-        //     }
-        // }
-
-        KDL::Frame get_pose(std::vector<double> position6d)
-        {
-            KDL::Frame pose;
-            pose.p = KDL::Vector(position6d[0], position6d[1], position6d[2]);
-            pose.M = KDL::Rotation::RPY(position6d[3], position6d[4], position6d[5]);
-            return pose;
-        }
-        // KDL::Frame get_end_link_pose(const KDL::Chain& chain, const std::vector<double>& joint_angles)
-        // {
-        //     // set the values of the joints
-        //     KDL::JntArray pykdl_joint_array(chain.getNrOfJoints());
-
-        //     for (unsigned int i = 0; i < chain.getNrOfJoints(); i++)
-        //     {
-        //         pykdl_joint_array(i) = joint_angles[i];
-        //     }
-
-        //     // compute end_effector_pose
-        //     KDL::ChainFkSolverPos_recursive solver(chain);
-        //     KDL::Frame end_effector_pose;
-        //     solver.JntToCart(pykdl_joint_array, end_effector_pose);
-
-        //     return end_effector_pose;
-        // }
-
-        std::vector<double> get_joints_angles(const KDL::Chain& chain, const KDL::Frame& end_effector_pose, std::vector<double> joints_angles_initial_guess) {
-            // convert initial guess to array
-            KDL::JntArray joints_array_initial_guess = KDL::JntArray(chain.getNrOfJoints());
-            for (int i = 0; i < chain.getNrOfJoints(); i++) {
-                joints_array_initial_guess(i) = joints_angles_initial_guess[i];
-            }
-
-            // Create an FK solver for the chain
-            // KDL::ChainFkSolverPos_recursive fk_p_solver(chain);
-
-            // Create an IK solver for the chain
-            // KDL::ChainIkSolverVel_pinv ik_v_solver(chain);
-            // KDL::ChainIkSolverPos_NR ik_p_solver(chain, fk_p_solver, ik_v_solver);
-            Eigen::Matrix<double,6,1> mask;
-            mask << 1, 1, 1, 0, 0, 0;
-            auto ik_p_solver = KDL::ChainIkSolverPos_LMA(chain, mask);
-
-            // Compute the inverse kinematics
-            KDL::JntArray joints_array = KDL::JntArray(chain.getNrOfJoints());
-            int ik_status = ik_p_solver.CartToJnt(joints_array_initial_guess, end_effector_pose, joints_array);
-
-            if (ik_status < 0) {
-                std::cout << "IK solution not found" << std::endl;
-            }
-
-            // convert joint array to list
-            std::vector<double> joints_angles;
-            for (int i = 0; i < chain.getNrOfJoints(); i++) {
-                joints_angles.push_back(joints_array(i));
-            }
-
-            return joints_angles;
-        }
-};
-
 class Nao_RArm_chain {
-    public:
-        Nao_RArm_chain() {
-            ik = new InverseKinematics();
-            auto base_link = "torso";
-            auto end_link = "r_gripper";
-            arm_chain = ik->create_chain(base_link, end_link);
+public:
+    Nao_RArm_chain() {
+        // Get chain from model
+        arm_chain = create_chain("torso", "r_gripper");
 
-            auto joint = KDL::Joint("PenTip");
-            auto frame = KDL::Frame(KDL::Vector(0.08,0.0,0.035));
-            auto segment = KDL::Segment("PenTip",joint,frame);
-            arm_chain.addSegment(segment);
-            ik->print_chain(arm_chain);
-            for(int i = 0; i < arm_chain.getNrOfJoints(); i++) {
-                prev_joints_angles.push_back(0.0);
+        // Add Pen to the end of the chain
+        auto joint = KDL::Joint("PenTip");
+        auto frame = KDL::Frame(KDL::Vector(0.08,0.0,0.035));
+        auto segment = KDL::Segment("PenTip",joint,frame);
+        arm_chain.addSegment(segment);
+        print_chain_info(arm_chain);
+
+        this->num_of_joints = arm_chain.getNrOfJoints();
+        this->prev_joints_angles = KDL::JntArray(this->num_of_joints);
+
+        // Construct forward and inverse kinematics solvers
+        this->fk_p_solver = new KDL::ChainFkSolverPos_recursive(arm_chain);
+        //Eigen::Matrix<double,6,1> mask;
+        //mask << 1, 1, 1, 0, 0, 0;
+        //this->ik_p_solver = KDL::ChainIkSolverPos_LMA(arm_chain, mask);
+
+        // Joint-limits:         ['RShoulderPitch',    'RShoulderRoll',    'RElbowYaw',         'RElbowRoll',        'RWristYaw',         RHand']
+        this->joint_min_limits = {-2.0856685638427734, -1.326450228691101, -2.0856685638427734, 0.03490658476948738, -1.8238691091537476, 0.0};
+        this->joint_max_limits = {2.0856685638427734,  0.3141592741012573,  2.0856685638427734, 1.5446163415908813,   1.8238691091537476, 1.};
+    }
+
+    KDL::Chain create_chain(const std::string& base_link, const std::string& end_link) {
+        // Load chain from model
+        urdf::Model robot_model;
+        std::string xml_string;
+        KDL::Tree kdl_tree;
+        ros::param::get("robot_description", xml_string);
+        if (!robot_model.initString(xml_string)) {
+            ROS_ERROR("Failed to parse URDF");
+        }
+        if (!kdl_parser::treeFromUrdfModel(robot_model, kdl_tree)) {
+            ROS_ERROR("Failed to create KDL tree.");
+        } else {
+            ROS_INFO("Chain created successfully.");
+        }
+
+        // Get chain from model
+        KDL::Chain chain;
+        if (!kdl_tree.getChain(base_link, end_link, chain)) {
+            ROS_ERROR("Failed to create KDL chain.");
+        } else {
+            ROS_INFO("Root link: %s, End link: %s", base_link.c_str(), end_link.c_str());
+        }
+
+        return chain;
+    }
+
+    void print_chain_info(const KDL::Chain& chain) {
+        std::cout << "Number of segments: " << chain.getNrOfSegments() << std::endl;
+        std::cout << "Number of joints: " << chain.getNrOfJoints() << std::endl;
+        for (unsigned int i = 0; i < chain.getNrOfSegments(); i++) {
+             std::cout << chain.getSegment(i).getJoint().getName() << std::endl;
+        }
+    }
+
+    KDL::JntArray get_angles(const KDL::Frame& end_effector_transform) {
+        Eigen::Matrix<double,6,1> mask;
+        mask << 1, 1, 1, 0, 0, 0;
+        auto ik_p_solver = KDL::ChainIkSolverPos_LMA(arm_chain, mask);
+
+        // Get first angles, using initial-guess as the prev_joints_angles
+        auto angles_initial_guess = this->prev_joints_angles;
+        KDL::JntArray angles = KDL::JntArray(this->num_of_joints);
+        int ik_status = ik_p_solver.CartToJnt(angles_initial_guess, end_effector_transform, angles);
+
+        // Check for angles limits repeat with different inital-guess until convergance (within limits)
+        auto iteration = 0;
+        const auto max_iter_for_range_check = 100;
+        auto num_joints_to_check = this->num_of_joints - 1; //all but the last one
+        do {
+            auto out_of_range = false;
+            for(unsigned int i = 0; i < num_joints_to_check; i++) {
+                if(angles(i) < this->joint_min_limits[i] || angles(i) > this->joint_max_limits[i]) {
+                    out_of_range = true;
+                }
+                if(out_of_range) {
+                    // Change initial wuess to a random value in between min/2 and max/2 (to aviod singularities at the limits of the joints)
+                    angles_initial_guess(i) = this->joint_min_limits[i]/2 + (this->joint_max_limits[i]/2 - this->joint_min_limits[i]/2) * ((double)rand() / (double)RAND_MAX);
+                }
             }
-        }
-
-        std::vector<double> get_joint_angles_from_pose(KDL::Frame &pose) {
-            std::vector<double> joints_angles = ik->get_joints_angles(arm_chain, pose, prev_joints_angles);
-            for(int i = 0; i < arm_chain.getNrOfJoints(); i++) {
-                prev_joints_angles[i] = joints_angles[i];
-                //std::cout << "prev_joints_angles: i="<< i << "   " <<prev_joints_angles[i] << std::endl;
+            if(out_of_range) {
+                ik_status = ik_p_solver.CartToJnt(angles_initial_guess, end_effector_transform, angles);
+                iteration++;
             }
-            return joints_angles;
+            else{
+                break;
+            }
+        }while(iteration < max_iter_for_range_check);
+
+        // if solution is found update the prev_joints_angles
+        if (ik_status < 0 || iteration >= max_iter_for_range_check) {
+            ROS_INFO("Inverse kinematics failed.");
+            return KDL::JntArray();
+        } else {
+            this->prev_joints_angles = angles;
+            return angles;
         }
+    }
 
-        std::vector<double> get_angles(std::vector<double> position6D) {
-            // Define the desired end-effector pose
-            KDL::Frame end_effector_pose = ik->get_pose(position6D);
-            std::vector<double> joints_angles = get_joint_angles_from_pose(end_effector_pose);
-            return joints_angles;
+    KDL::Frame get_transform(const KDL::JntArray& joints) {
+        KDL::Frame end_effector_transform;
+        int fk_status = this->fk_p_solver->JntToCart(joints, end_effector_transform);
+        if (fk_status < 0) {
+            ROS_INFO("Forward kinematics failed.");
         }
+        return end_effector_transform;
+    }
 
-        // double* get_angles_from_transform(AL::Transform transform) {
-        //     // Define the desired end-effector pose
-        //     PyKDL::Frame pose;
-        //     pose.p[0] = transform.r1_c4;
-        //     pose.p[1] = transform.r2_c4;
-        //     pose.p[2] = transform.r3_c4;
+private:
+    unsigned int num_of_joints{};
+    KDL::JntArray prev_joints_angles;
+    KDL::ChainFkSolverPos_recursive * fk_p_solver;
+    //KDL::ChainIkSolverPos_LMA *ik_p_solver;
 
-        //     PyKDL::Rotation R(transform.r1_c1, transform.r1_c2, transform.r1_c3, \
-        //         transform.r2_c1, transform.r2_c2, transform.r2_c3, \
-        //         transform.r3_c1, transform.r3_c2, transform.r3_c3);
-        //     pose.M = R;
-
-        //     std::cout << "get_angles_from_transform: " << pose << std::endl;
-        //     return get_joint_angles_from_pose(pose);
-        // }
-
-        std::vector<double> get_position(std::vector<double> angles) {
-            return ik->get_end_link_position(arm_chain, angles);
-        }
-
-        std::vector<double> get_transform(std::vector<double> angles) {
-             return ik->get_end_link_transform(arm_chain, angles);
-        }
-
-        InverseKinematics* ik;
-        KDL::Chain arm_chain;
-        std::vector<double> prev_joints_angles;
+    std::vector<double> joint_min_limits;
+    std::vector<double> joint_max_limits;
+    
+    KDL::Chain arm_chain;
 };
 
-Nao_RArm_chain* arm_chain_p;
+Nao_RArm_chain *arm_chain_p;
 
-bool getAnglesCallback(leonao::Nao_RArm_chain_get_angles::Request& req,
+bool get_angles_callback(leonao::Nao_RArm_chain_get_angles::Request& req,
                        leonao::Nao_RArm_chain_get_angles::Response& res) {
-    // Convert the request position vector to a KDL::Frame
-    std::vector<double> position6D;
-    for (int i = 0; i < req.position6D.size(); i++)
+    // Parse request
+    KDL::Frame end_effector_transform;
+    end_effector_transform.p = KDL::Vector(req.position6D[0], req.position6D[1], req.position6D[2]);
+    end_effector_transform.M = KDL::Rotation::RPY(req.position6D[3], req.position6D[4], req.position6D[5]);
+
+    KDL::JntArray angles = arm_chain_p->get_angles(end_effector_transform);
+
+    // Parse response
+    for (int i = 0; i < angles.data.size(); i++)
     {
-        position6D.push_back(req.position6D[i]);
-        // std::cout << "req.position6D: i="<< i << "   " <<req.position6D[i] << std::endl;
+        res.angles.push_back(angles(i));
+        //Make sure to check n the client if the response.angles is empty!
     }
-    
-    std::vector<double> angles = arm_chain_p->get_angles(position6D);
-    std::vector<double> new_position6D = arm_chain_p->ik->get_end_link_position(arm_chain_p->arm_chain, angles);
-    std::cout << "new_position6D: " << new_position6D[0] << " " << new_position6D[1] << " " << new_position6D[2] << std::endl;
-    for (int i = 0; i < angles.size(); i++)
-    {
-        res.angles.push_back(angles[i]);  // Set the response angles
+
+    if(angles.data.size() != 0){
+         // Debug: calculate position with forward kinematics and print it as position6D
+        KDL::Frame transform = arm_chain_p->get_transform(angles);
+        auto x = transform.p[0];
+        auto y = transform.p[1];
+        auto z = transform.p[2];
+        double wx, wy, wz;
+        transform.M.GetRPY(wx, wy, wz);
+        std::cout << "fk->new_position6D: "<< x  << ", " << y << ", " << z << ", " << wx << ", " << wy << ", " << wz << std::endl;     
     }
-    
+
     return true;
 }
 
-bool getTransformCallback(leonao::Nao_RArm_chain_get_transform::Request& req,
+bool get_transform_callback(leonao::Nao_RArm_chain_get_transform::Request& req,
                        leonao::Nao_RArm_chain_get_transform::Response& res) {
-    
-    std::vector<double> angles;
+    // Parse request
+    auto angles = KDL::JntArray(req.angles.size());
     for (int i = 0; i < req.angles.size(); i++)
     {
-        angles.push_back(req.angles[i]);
+        angles(i) = req.angles[i];
     }
-    
-    std::vector<double> transform = arm_chain_p->get_transform(angles);
-    
-    for (int i = 0; i < transform.size(); i++)
-    {
-        res.transform.push_back(transform[i]);
-    }
-    
+
+
+
+    KDL::Frame transform = arm_chain_p->get_transform(angles);
+
+    // Parse response
+    res.transform.push_back(transform.M(0,0));
+    res.transform.push_back(transform.M(0,1));
+    res.transform.push_back(transform.M(0,2));
+    res.transform.push_back(transform.p[0]);
+    res.transform.push_back(transform.M(1,0));
+    res.transform.push_back(transform.M(1,1));
+    res.transform.push_back(transform.M(1,2));
+    res.transform.push_back(transform.p[1]);
+    res.transform.push_back(transform.M(2,0));
+    res.transform.push_back(transform.M(2,1));
+    res.transform.push_back(transform.M(2,2));
+    res.transform.push_back(transform.p[2]);
+
     return true;
 }
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "nao_kdl");
     ros::NodeHandle nh;
-    ros::Rate rate(10); // 10hz
-
+    ros::Rate rate(10);
     arm_chain_p = new Nao_RArm_chain();
 
-    ros::ServiceServer service_angles = nh.advertiseService("Nao_RArm_chain_get_angles", &getAnglesCallback);
-    ros::ServiceServer service_transform = nh.advertiseService("Nao_RArm_chain_get_transform", &getTransformCallback);
-    // Nao_RArm_motion_proxy arm_motion_proxy;
-
-    // std::vector<float> measured_position6D = arm_motion_proxy.get_position();
-    // std::vector<float> measured_joints = arm_motion_proxy.get_angles();
-    // std::vector<float> calculated_position6D = arm_chain.get_position(measured_joints);
-    // std::cout << "measured_joints: " << measured_joints << std::endl;
-    // std::cout << "measured_position6D: " << measured_position6D << std::endl;
-    // std::cout << "calculated_position6D: " << calculated_position6D << std::endl;
-
-    // std::vector<float> new_joints = arm_chain.get_angles(calculated_position6D);
-    // std::vector<float> new_position6D = arm_chain.get_position(new_joints);
-    // std::cout << "new_joints" << new_joints << std::endl;
-    // std::cout << "new_position6D: " << new_position6D << std::endl;
-
+    ros::ServiceServer get_angles_service = nh.advertiseService("Nao_RArm_chain_get_angles", &get_angles_callback);
+    ros::ServiceServer get_transform_service = nh.advertiseService("Nao_RArm_chain_get_transform", &get_transform_callback);
     ros::spin();
     return 0;
 }

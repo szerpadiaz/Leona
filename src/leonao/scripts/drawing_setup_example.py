@@ -39,10 +39,18 @@ class Drawing_setup_tester():
         self.previous_point = [0,0,0]
 
     def init_station_frame(self):
+        # Set a initial position
+        #initial_position =  [0.1349065601825714, -0.20778782665729523, 0.08519446104764938, -0.3972117304801941, 0.07472652941942215, -0.013175832107663155]
+        #self.motion_proxy.setPosition("RArm", motion.FRAME_TORSO, initial_position, 0.5, motion.AXIS_MASK_ALL)
+        #rospy.sleep(1.0)
+
         # T_bs: Transformation of the STATION-FRAME (s) with respect to the BASE-FRAME (b)
         joints_names = self.motion_proxy.getBodyNames("RArm")
         joints_angles = self.motion_proxy.getAngles(joints_names, True)
         self.T_bs = self.get_transform_client(joints_angles)
+
+        initial_position = self.motion_proxy.getPosition("RArm", motion.FRAME_TORSO, True)
+        print("initial_position", initial_position)
         
     def disable_arm_stiffness(self):
         self.motion_proxy.stiffnessInterpolation('RArm', 0.0, 1.0)
@@ -98,8 +106,8 @@ class Drawing_setup_tester():
     def move_angles(self, joints_angles_list):
         joint_names = self.motion_proxy.getBodyNames("RArm")
         for target_angles in joints_angles_list:
-            self.motion_proxy.angleInterpolationWithSpeed(joint_names[:-1], target_angles, 0.1)
-            rospy.sleep(0.5)
+            self.motion_proxy.angleInterpolationWithSpeed(joint_names[:-1], target_angles, 0.25)
+            #rospy.sleep(0.5)
 
     def main_loop(self):
         x = float(input("Enter x value in cm")) / 100
@@ -107,46 +115,29 @@ class Drawing_setup_tester():
         z = float(input("Enter z value in cm")) / 100
 
         joints_angles_list = []
-        # length = math.sqrt((x-self.previous_point[0])**2 + (y-self.previous_point[1])**2 + (z-self.previous_point[2])**2)*100
-        # for i in range(1, int(length) + 1):
-        #     xi = (x - self.previous_point[0]) /length * i + self.previous_point[0]
-        #     yi = (y - self.previous_point[1]) /length * i + self.previous_point[1]
-        #     zi = (z - self.previous_point[2]) /length * i + self.previous_point[2]
-        #     joints_angles_list.append(self.get_joints_angles(xi, yi, zi))
-        # self.previous_point = [x,y,z]
+        length = math.sqrt((x-self.previous_point[0])**2 + (y-self.previous_point[1])**2 + (z-self.previous_point[2])**2)*100
+        for i in range(1, int(length) + 1):
+             xi = (x - self.previous_point[0]) /length * i + self.previous_point[0]
+             yi = (y - self.previous_point[1]) /length * i + self.previous_point[1]
+             zi = (z - self.previous_point[2]) /length * i + self.previous_point[2]
+             angles_i = self.get_joints_angles(xi, yi, zi)
+             if(angles_i):
+                joints_angles_list.append(angles_i)
 
-        joints_angles_list.append(self.get_joints_angles(x, y, z))
-        
-        joint_names = self.motion_proxy.getBodyNames("RArm")
-        joint_limits = self.motion_proxy.getLimits("RArm")
-        # print(joint_names)
-        # print(joint_limits[0][0], " - ", joint_limits[1][0], " - ", joint_limits[2][0], " - ", joint_limits[3][0], " - ", joint_limits[4][0], " - ", joint_limits[5][0])
-        # print(joint_limits[0][1], " - ", joint_limits[1][1], " - ", joint_limits[2][1], " - ", joint_limits[3][1], " - ", joint_limits[4][1], " - ", joint_limits[5][1])
-        joints_angles_list_valid = []
-        for i in range(len(joints_angles_list)):
-            add = True
-            for j in range(len(joint_names) - 1):
-                if joints_angles_list[i][j] < joint_limits[j][0] or joints_angles_list[i][j] > joint_limits[j][1]:
-                    print("Delete: ", j, " - ", joints_angles_list[i])
-                    add = False
-                    break
-            if add:
-                joints_angles_list_valid.append(joints_angles_list[i][:-1])
-        
-        # print(joints_angles_list_valid)
-        position2 = self.motion_proxy.getPosition("RArm", BASE_FRAME_ID, True)
-        print("Position almath: ", position2)
-        # Move by setting a list of transformations.
-        #self.move(T_bw_as_vector_list)
+        self.previous_point = [x,y,z]
+
+        angles = self.get_joints_angles(x, y, z)
+        if(angles):
+            joints_angles_list.append(angles)
         
         # Move by setting a list of angles.
-        self.move_angles(joints_angles_list_valid)
+        self.move_angles(joints_angles_list)
         
 if __name__ == '__main__':
     rospy.init_node('drawing_setup_example', anonymous=True)
     tester = Drawing_setup_tester()
     tester.enable_arm_stiffness()
-    rospy.sleep(2.0)
+    rospy.sleep(1.0)
 
     try:
         while not rospy.is_shutdown():
