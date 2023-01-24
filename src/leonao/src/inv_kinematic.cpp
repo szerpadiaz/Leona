@@ -93,11 +93,22 @@ public:
                 if(angles(i) < this->joint_min_limits[i] || angles(i) > this->joint_max_limits[i]) {
                     out_of_range = true;
                 }
-                if(out_of_range) {
+            }
+
+            // for(unsigned int i = 0; i < ik_p_solver.lastSV.size() - 1; i++) {
+            //     std::cout << "Singular value: " << i << " - " << ik_p_solver.lastSV[i] << std::endl;
+            //     if(ik_p_solver.lastSV[i] < 1e-15){
+            //         out_of_range = true;
+            //     }
+            // }
+
+            if(out_of_range) {
+                for(unsigned int i = 0; i < num_joints_to_check; i++) {
                     // Change initial wuess to a random value in between min/2 and max/2 (to aviod singularities at the limits of the joints)
                     angles_initial_guess(i) = this->joint_min_limits[i]/2 + (this->joint_max_limits[i]/2 - this->joint_min_limits[i]/2) * ((double)rand() / (double)RAND_MAX);
                 }
             }
+
             if(out_of_range) {
                 ik_status = ik_p_solver.CartToJnt(angles_initial_guess, end_effector_transform, angles);
                 iteration++;
