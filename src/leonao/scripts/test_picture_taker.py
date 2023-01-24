@@ -51,7 +51,9 @@ class pictureTaker:
             img = self.bridge.imgmsg_to_cv2(self.currentImageFromStream, desired_encoding='bgr8')
             if IMAGE_ROTATION:
                 img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            with open(WATCHFOLDER_PATH + "result.txt", "w") as f: # Reset the observation results
+            with open(WATCHFOLDER_PATH + "face_detection_result.txt", "w") as f: # Reset the observation results
+                f.write("")
+            with open(WATCHFOLDER_PATH + "sketcher_result.txt", "w") as f: # Reset the observation results
                 f.write("")
             cv2.imwrite(WATCHFOLDER_PATH+path, img)  
             print("Image saved in " + WATCHFOLDER_PATH + path)")
@@ -60,7 +62,7 @@ class pictureTaker:
     def analyzePicture(self, img, showAnalysis = False):
         bbox = ""
         while bbox == "":
-            with open(WATCHFOLDER_PATH + "result.txt", "r") as f:
+            with open(WATCHFOLDER_PATH + "face_detection_result.txt", "r") as f:
                 bbox = f.read()
                 # if no face is found, bbox is "None"
                 if bbox == "None":
@@ -131,7 +133,15 @@ class pictureTaker:
         analyzePictureResponse, img = self.analyzePicture(img, showAnalysis= True)
         if analyzePictureResponse == "Success":
             cv2.imwrite(WATCHFOLDER_PATH+"sketch_face.jpg", img) 
-            pass
+            paths = ""
+            while paths == "":
+                with open(WATCHFOLDER_PATH + "sketcher_result.txt", "r") as f:
+                    paths = f.read()
+                    # If the analysis is not yet one, bbox is empty
+                    if paths == "":
+                        continue
+                    print("Sketcher result:", paths)
+                    
         else:
             self.speak("Let's try again!")
 

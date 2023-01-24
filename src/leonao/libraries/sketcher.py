@@ -8,8 +8,8 @@ import torchvision
 import os
 
 import sys
-sys.path.append('../')
-from face_detector.face_detector import FaceDetector
+#sys.path.append('../')
+from face_detector import FaceDetector
 
 sys.path.append('./apdrawgan_adjusted')
 from apdrawgan_adjusted import apdrawgan
