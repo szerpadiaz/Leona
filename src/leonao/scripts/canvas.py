@@ -44,19 +44,19 @@ class Canvas():
     def get_configuration(self):
         # Read 1st point/origin
         raw_input("Move to 1st point of the plane (origin). Press enter if done.")
-        plane_point_1 = self.get_position()
+        plane_point_1 = self.get_position_bt()
         # plane_point_1 = ?
         print("1st point read. ", plane_point_1)
 
         # Read 2nd point
         raw_input("Move to 2nd point of the plane. Press enter if done.")
-        plane_point_2 = self.get_position()
+        plane_point_2 = self.get_position_bt()
         # plane_point_2 = ?
         print("2nd point read. ", plane_point_2)
 
         # Read 3rd point
         raw_input("Move to 3rd point of the plane. Press enter if done.")
-        plane_point_3 = self.get_position()
+        plane_point_3 = self.get_position_bt()
         # plane_point_3 = ?
         print("3rd point read. ", plane_point_3)
 
@@ -108,14 +108,11 @@ class Canvas():
         T_bs.r3_c3 = R[2,2]
         T_bs.r3_c4 = plane_point_1[2]
         self.T_bs = T_bs
-                 
 
-    def get_x_in_drawing_plane(self, y, z):
-        x = (-self.plane_normal[1]*y - self.plane_normal[2]*z - self.plane_offset) / self.plane_normal[0]
-        return x
+        # Get current point and move to new origin?
+        # self.go_to_point([0, 0])
 
-    def calculate_angles(self, y, z):
-        x = 0.0 # self.get_x_in_drawing_plane(y, z)
+    def calculate_angles(self, x, y, z):
 
         # T_sg: Transformation of the GOAL-FRAME (g) with respect to the STATION-FRAME (s)
         T_sg = almath.Transform(x,y,z)
@@ -134,12 +131,7 @@ class Canvas():
             print("Service call failed: %s" % e)
             return []
 
-    def get_position(self):
-        T_temp = self.get_transform_bs()
-        point = [T_temp.r1_c4, T_temp.r2_c4, T_temp.r3_c4]
-        return point
-
-    def get_transform_bs(self):
+    def get_transform_bt(self):
         joints_names = self.motion_proxy.getBodyNames("RArm")
         joints_angles = self.motion_proxy.getAngles(joints_names, True)
         rospy.wait_for_service('Nao_RArm_chain_get_transform')
@@ -151,6 +143,11 @@ class Canvas():
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
             return []
+
+    def get_position_bt(self):
+        T_temp = self.get_transform_bt()
+        point = [T_temp.r1_c4, T_temp.r2_c4, T_temp.r3_c4]
+        return point
 
     def move_joints(self, joints_angles_list):
         joint_names = self.motion_proxy.getBodyNames("RArm")
@@ -164,22 +161,21 @@ class Canvas():
     def enable_arm_stiffness(self):
         self.motion_proxy.stiffnessInterpolation('RArm', 1.0, 1.0)
 
-    def go_to_point(self, point):
-        # x in the moving-plane (parallel to the drawing plane)
-        y = point[0]
-        z = point[1]
+    def go_to_point(self, end_point):
+        T_bt = self.get_transform_bt()
+        T_sb = self.T_bs.inverse()
+        T_st = T_sb * T_bt
+        start_point = [T_st.r2_c4, T_st.r3_c4]
 
-        # go to a position in the drawing plane without drawing anything
-        # we should move along a plane parallell to the drawing plane
-        pass
+        # Move in a line parallel to the drawing plane
+        line_path = self.calculate_line_path(start_point, end_point)
+        x = -0.02
+        self.move_along_path(x, line_path)
 
-    def draw_path(self, path):
-        # Move to initial position of path
-        self.go_to_point(path[0])
-
+    def move_along_path(self, x, path):
         joints_angles_list = []
         for point in path:
-            angles_i = self.calculate_angles(point[0], point[1])
+            angles_i = self.calculate_angles(x, point[0], point[1])
             if(angles_i):
                 joints_angles_list.append(angles_i)
 
@@ -187,6 +183,13 @@ class Canvas():
 
         if(joints_angles_list):
             self.move_joints(joints_angles_list)
+
+    def draw_path(self, path):
+        # Move to the first point in the path (without drawing anything)
+        # self.go_to_point(path[0])
+        # Draw (move in drawing plane)
+        x = 0.0
+        self.move_along_path(x, path)
 
     def draw_line(self, start_point, end_point):
         line_path = self.calculate_line_path(start_point, end_point)
