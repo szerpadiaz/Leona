@@ -35,9 +35,6 @@ class Canvas():
         self.T_bs, plane_point_1, plane_point_2, plane_point_3 = self.get_configuration()
         self.calculate_drawing_plane(plane_point_1, plane_point_2, plane_point_3)
 
-        # max distance between two consecutive points
-        self.max_distance = 0.01
-
         self.enable_arm_stiffness()
         rospy.sleep(2.0)
 
@@ -91,9 +88,7 @@ class Canvas():
 
     def calculate_angles(self, y, z):
         x = self.get_x_in_drawing_plane(y, z)
-        self.calculate_angles(self, x, y, z)
 
-    def calculate_angles(self, x, y, z):
         # T_sg: Transformation of the GOAL-FRAME (g) with respect to the STATION-FRAME (s)
         T_sg = almath.Transform(x,y,z)
 
@@ -152,56 +147,67 @@ class Canvas():
         # we should move along a plane parallell to the drawing plane
         pass
 
-    def draw_line(self, start_point, end_point):
-        y0 = start_point[0]
-        z0 = start_point[1]
-        y = end_point[0]
-        z = end_point[1]
+    def draw_path(self, path):
+        # Move to initial position of path
+        self.go_to_point(path[0])
 
         joints_angles_list = []
-        length = math.sqrt((x-x0)**2 + (y-y0)**2 + (z-z0)**2)
-        for i in range(1, int(length) + 1):
-             yi = (y - y0) /length * i + y0
-             zi = (z - z0) /length * i + z0
-             angles_i = self.calculate_angles(yi, zi)
-             if(angles_i):
-                joints_angles_list.append(angles_i)
-
-        angles = self.calculate_angles(y, z)
-        if(angles):
-            joints_angles_list.append(angles)
-        
-        # Move by setting a list of angles.
-        # self.move_joints(joints_angles_list)
-
-    def draw_ellipse(self, a, b):
-        ellipse_path = self.calculate_ellipse_path(a, b)
-        joints_angles_list = []
-        for point in ellipse_path:
+        for point in path:
             angles_i = self.calculate_angles(point[0], point[1])
             if(angles_i):
                 joints_angles_list.append(angles_i)
 
         #print(joints_angles_list)
 
-        # Move by setting a list of angles.
-        self.move_joints(joints_angles_list)
+        if(joints_angles_list):
+            self.move_joints(joints_angles_list)
 
-    def calculate_ellipse_path(self, a, b):
+    def draw_line(self, start_point, end_point):
+        line_path = self.calculate_line_path(start_point, end_point)
+        self.draw_path(line_path)
+
+    def calculate_line_path(self, start_point, end_point):
+        line_path = []
+        y0 = start_point[0]
+        z0 = start_point[1]
+        line_path.append([y0, z0])
+
+        yn = end_point[0]
+        zn = end_point[1]
+        length = math.sqrt((yn-y0)**2 + (zn-z0)**2)
+        yi = y0
+        zi = z0
+        for i in range(1, int(length) + 1):
+             yi = (yn - y0) /length * i + y0
+             zi = (zn - z0) /length * i + z0
+             line_path.append([yi,zi])
+
+        if(yi < yn or zi < zn):
+            line_path.append([yn,zn])
+
+        return line_path
+
+    def draw_ellipse(self, start_point, a, b):
+        ellipse_path = self.calculate_ellipse_path(start_point, a, b)
+        self.draw_path(ellipse_path)
+
+    def calculate_ellipse_path(self, start_point, a, b):
+        # max distance between two consecutive points
+        max_distance = 0.01
         path = []
         i = 0
         final_i = 0
         while i <= 360:
             z = a * math.cos(math.radians(i))
             y = b * math.sin(math.radians(i))
-            path.append([y, z])
+            path.append([y + start_point[0], z + start_point[1]])
             final_i = i
-            i = i + math.degrees(math.acos(1- (self.max_distance**2)/(2*(a**2)) ))
+            i = i + math.degrees(math.acos(1- (max_distance**2)/(2*(a**2)) ))
         if final_i < 360:
             final_i = 360 
             z = a * math.cos(math.radians(final_i))
             y = b * math.sin(math.radians(final_i))
-            path.append([y, z])
+            path.append([y + start_point[0], z + start_point[1]])
         return path
 
     def draw_bezier_curve(self, control_point_1, control_point_2):
