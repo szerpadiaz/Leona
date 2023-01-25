@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 ## Example to setup the frameworks for the canvas
 
+from locale import normalize
 from pickle import TRUE
+from re import T
 import rospy
 import os
 import numpy as np
@@ -10,6 +12,7 @@ import almath
 from naoqi import ALProxy
 import math
 import motion
+import tf
 
 from inv_kinematic import *
 
@@ -32,21 +35,15 @@ class Canvas():
         self.motion_proxy = ALProxy("ALMotion", robot_ip, robot_port)
 
         # T_bs: Transformation of the STATION-FRAME (s) with respect to the BASE-FRAME (b)
-        self.T_bs, plane_point_1, plane_point_2, plane_point_3 = self.get_configuration()
+        plane_point_1, plane_point_2, plane_point_3 = self.get_configuration()
         self.calculate_drawing_plane(plane_point_1, plane_point_2, plane_point_3)
 
         self.enable_arm_stiffness()
         rospy.sleep(2.0)
 
     def get_configuration(self):
-        # Read initial position
-        raw_input("Move to pen to initial position. Press enter to start.")
-        T_bs = self.get_transform_bs()
-        initial_position = self.motion_proxy.getPosition("RArm", motion.FRAME_TORSO, True)
-        print("initial_position", initial_position)
-
-        # Read 1st point
-        raw_input("Move to 1st point of the plane. Press enter if done.")
+        # Read 1st point/origin
+        raw_input("Move to 1st point of the plane (origin). Press enter if done.")
         plane_point_1 = self.get_position()
         # plane_point_1 = ?
         print("1st point read. ", plane_point_1)
@@ -63,7 +60,7 @@ class Canvas():
         # plane_point_3 = ?
         print("3rd point read. ", plane_point_3)
 
-        return T_bs, plane_point_1, plane_point_2, plane_point_3
+        return plane_point_1, plane_point_2, plane_point_3
 
     def calculate_drawing_plane(self, plane_point_1, plane_point_2, plane_point_3):
         plane_point_1 = np.array(plane_point_1)
@@ -77,17 +74,48 @@ class Canvas():
         print("vector_13", vector_13)
         # Compute the plane normal from with the cross product
         self.plane_normal = np.cross(vector_12, vector_13)
+        self.plane_normal = self.plane_normal / np.linalg.norm(self.plane_normal)
         print("self.plane_normal: ", self.plane_normal)
         # Solve for one point to get offset of the equation
-        self.plane_offset = -plane_point_1[0]*self.plane_normal[0] - plane_point_1[1]*self.plane_normal[1] - plane_point_1[2]*self.plane_normal[2]
-        print("self.plane_offset: ", self.plane_offset)
+        # self.plane_offset = -plane_point_1[0]*self.plane_normal[0] - plane_point_1[1]*self.plane_normal[1] - plane_point_1[2]*self.plane_normal[2]
+        # print("self.plane_offset: ", self.plane_offset)
+        v1 = vector_12 / np.linalg.norm(vector_12) #- np.dot(vector_12, self.plane_normal) * self.plane_normal
+        v2 = np.cross(v1, self.plane_normal)
+        v2 = v2 / np.linalg.norm(v2)
+        print("normal: ", self.plane_normal)
+        print("v2: ", v2)
+        print("v1: ", v1)
+
+        R = np.column_stack((self.plane_normal, v2, v1))
+        print("R: ", R)
+        print("plane_point_1", plane_point_1)
+
+        #euler_angles = np.array(np.rad2deg(np.array(np.matrix(R).flat)), dtype=np.float32)
+        euler_angles = tf.transformations.euler_from_matrix(R, 'rxyz')
+        print("euler_angles", np.degrees(euler_angles))
+
+        T_bs = almath.Transform()
+        T_bs.r1_c1 = R[0,0]
+        T_bs.r1_c2 = R[0,1]
+        T_bs.r1_c3 = R[0,2]
+        T_bs.r1_c4 = plane_point_1[0]
+        T_bs.r2_c1 = R[1,0]
+        T_bs.r2_c2 = R[1,1]
+        T_bs.r2_c3 = R[1,2]
+        T_bs.r2_c4 = plane_point_1[1]
+        T_bs.r3_c1 = R[2,0]
+        T_bs.r3_c2 = R[2,1]
+        T_bs.r3_c3 = R[2,2]
+        T_bs.r3_c4 = plane_point_1[2]
+        self.T_bs = T_bs
+                 
 
     def get_x_in_drawing_plane(self, y, z):
         x = (-self.plane_normal[1]*y - self.plane_normal[2]*z - self.plane_offset) / self.plane_normal[0]
         return x
 
     def calculate_angles(self, y, z):
-        x = self.get_x_in_drawing_plane(y, z)
+        x = 0.0 # self.get_x_in_drawing_plane(y, z)
 
         # T_sg: Transformation of the GOAL-FRAME (g) with respect to the STATION-FRAME (s)
         T_sg = almath.Transform(x,y,z)
@@ -109,9 +137,7 @@ class Canvas():
     def get_position(self):
         T_temp = self.get_transform_bs()
         point = [T_temp.r1_c4, T_temp.r2_c4, T_temp.r3_c4]
-        T_bg = almath.Transform().fromPosition(point[0], point[1], point[2])
-        T_sg = self.T_bs.inverse() * T_bg
-        return [T_sg.r1_c4, T_sg.r2_c4, T_sg.r3_c4]
+        return point
 
     def get_transform_bs(self):
         joints_names = self.motion_proxy.getBodyNames("RArm")
@@ -174,7 +200,7 @@ class Canvas():
 
         yn = end_point[0]
         zn = end_point[1]
-        length = math.sqrt((yn-y0)**2 + (zn-z0)**2)
+        length = math.sqrt((yn-y0)**2 + (zn-z0)**2) * 100
         yi = y0
         zi = z0
         for i in range(1, int(length) + 1):
@@ -182,8 +208,9 @@ class Canvas():
              zi = (zn - z0) /length * i + z0
              line_path.append([yi,zi])
 
-        if(yi < yn or zi < zn):
-            line_path.append([yn,zn])
+        line_path.append([yn,zn])
+
+        print("line_path: ", line_path)
 
         return line_path
 
