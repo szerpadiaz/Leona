@@ -226,7 +226,7 @@ class Canvas():
         # Move to the first point in the path (without drawing anything)
         self.go_to_point(path[0])
         # Draw (move in drawing plane)
-        x = 0.002
+        x = 0.001
         self.move_along_path(x, path)
 
     def draw_line(self, start_point, end_point):
