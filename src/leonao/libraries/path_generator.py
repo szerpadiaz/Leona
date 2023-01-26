@@ -191,10 +191,10 @@ class Face_paths_generator():
     def get_face_inner_path(self, face_image_bmp):
         # Get face_inner_path
         turdsize = 1
-        MIN_SEGMENTS_PER_PATH = 1
+        MIN_SEGMENTS_PER_PATH = 5
         MAX_SEGMENTS_PER_PATH = 100
         MIN_DISTANCE = 1
-        SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 8
+        SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 20
 
         path = get_bezier_path(face_image_bmp, turdsize)
         eliminate_short_curves(path, MIN_SEGMENTS_PER_PATH)

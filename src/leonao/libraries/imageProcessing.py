@@ -16,6 +16,48 @@ from sketcher import Sketcher
 from path_generator import Face_paths_generator, preprocessor
 from local_painter import Leonao_painter
 
+def normalizePaths(input_paths):
+    # Make sure the output here will be in 0-1 and not in pixels (probably in the function already)
+    # Scale all values in face_inner_paths and face_outer_paths to 0-1
+
+    # Get the maximum value of tuples in lists of lists in face_inner_paths and face_outer_paths
+    # Divide all values in face_inner_paths and face_outer_paths by the maximum value
+    x_max = 0.0
+    x_min = 512.0
+    y_max = 0.0
+    y_min = 512.0
+
+    for paths in input_paths: # TODO: Not efficient, maybe needs to be changed
+        for list in paths:
+            for tuples in list:
+                (x,y) = tuples
+                if x > x_max:
+                    x_max = x
+                if x < x_min:
+                    x_min = x
+                if y > y_max:
+                    y_max = y
+                if y < y_min:
+                    y_min = y
+    
+    print("X max: ", x_max)
+    print("X min: ", x_min)
+    print("Y max: ", y_max)
+    print("Y min: ", y_min)
+
+    if x_max - x_min > y_max - y_min:
+        longest_side = x_max - x_min
+    else:
+        longest_side = y_max - y_min
+    all_paths_list = input_paths
+    for p, paths in enumerate(all_paths_list):
+        for i, list in enumerate(paths):
+            for j, tuples in enumerate(list):
+                (x,y) = tuples
+                all_paths_list[p][i][j] = [(x - x_min)/longest_side, (y - y_min)/longest_side]
+    
+    return all_paths_list
+
 class Watcher():
     def __init__(self, DIRECTORY_TO_WATCH):
         self.observer = Observer()
@@ -91,53 +133,16 @@ class Handler(FileSystemEventHandler):
                 face_outer_paths_original = deepcopy(face_outer_paths)
                 face_inner_paths_original = deepcopy(face_inner_paths)
 
-                # Make sure the output here will be in 0-1 and not in pixels (probably in the function already)
-                # Scale all values in face_inner_paths and face_outer_paths to 0-1
+                all_paths_list = normalizePaths([face_inner_paths, face_outer_paths])
 
-                # Get the maximum value of tuples in lists of lists in face_inner_paths and face_outer_paths
-                # Divide all values in face_inner_paths and face_outer_paths by the maximum value
-                x_max = 0.0
-                x_min = 512.0
-                y_max = 0.0
-                y_min = 512.0
-
-                for paths in [face_inner_paths, face_outer_paths]: # TODO: Not efficient, maybe needs to be changed
-                    for list in paths:
-                        for tuples in list:
-                            (x,y) = tuples
-                            if x > x_max:
-                                x_max = x
-                            if x < x_min:
-                                x_min = x
-                            if y > y_max:
-                                y_max = y
-                            if y < y_min:
-                                y_min = y
                 
-                print("X max: ", x_max)
-                print("X min: ", x_min)
-                print("Y max: ", y_max)
-                print("Y min: ", y_min)
-
-                if x_max - x_min > y_max - y_min:
-                    longest_side = x_max - x_min
-                else:
-                    longest_side = y_max - y_min
-                all_paths_list = [face_inner_paths, face_outer_paths]
-                for p, paths in enumerate(all_paths_list):
-                    for i, list in enumerate(paths):
-                        for j, tuples in enumerate(list):
-                            (x,y) = tuples
-                            all_paths_list[p][i][j] = [(x - x_min)/longest_side, (y - y_min)/longest_side]
-
-
                 all_paths = {"inner": all_paths_list[0], "outer": all_paths_list[1]}
                 print("All Paths size: ", (len(all_paths["inner"]) + len(all_paths["outer"])))
                 print("All Path points amount: ", sum([len(list) for list in all_paths["inner"]]) + sum([len(list) for list in all_paths["outer"]]))
                 with open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.txt", "wb") as f:
                     pickle.dump(all_paths, f, protocol=2)
 
-                l_painter.draw(face_outer_paths_original, face_inner_paths_original)
+                #l_painter.draw(face_outer_paths_original, face_inner_paths_original)
 
                 return None
 
