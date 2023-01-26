@@ -85,16 +85,55 @@ class Handler(FileSystemEventHandler):
 
                 l_painter = Leonao_painter()
                 face_outer_paths = face_paths_gen.get_face_inner_path(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp")
-                print("Outer Paths: ", face_outer_paths)
                 face_inner_paths = face_paths_gen.get_face_inner_path(DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp")
-                # Make sure the output here will be in CM and not in pixels (probably in the function already)
+                # Make sure the output here will be in 0-1 and not in pixels (probably in the function already)
+                # Scale all values in face_inner_paths and face_outer_paths to 0-1
+
+                # Get the maximum value of tuples in lists of lists in face_inner_paths and face_outer_paths
+                # Divide all values in face_inner_paths and face_outer_paths by the maximum value
+                x_max = 0.0
+                x_min = 512.0
+                y_max = 0.0
+                y_min = 512.0
+
+                print(face_outer_paths)
+
+                for paths in [face_inner_paths, face_outer_paths]: # TODO: Not efficient, maybe needs to be changed
+                    for list in paths:
+                        for tuples in list:
+                            (x,y) = tuples
+                            if x > x_max:
+                                x_max = x
+                            if x < x_min:
+                                x_min = x
+                            if y > y_max:
+                                y_max = y
+                            if y < y_min:
+                                y_min = y
+                
+                print("X max: ", x_max)
+                print("X min: ", x_min)
+                print("Y max: ", y_max)
+                print("Y min: ", y_min)
+
+                if x_max - x_min > y_max - y_min:
+                    longest_side = x_max - x_min
+                else:
+                    longest_side = y_max - y_min
+                all_paths_list = [face_inner_paths, face_outer_paths]
+                for p, paths in enumerate(all_paths_list):
+                    for i, list in enumerate(paths):
+                        for j, tuples in enumerate(list):
+                            (x,y) = tuples
+                            all_paths_list[p][i][j] = ((x - x_min)/longest_side, (y - y_min)/longest_side)
+
+
+                all_paths = {"inner": all_paths_list[0], "outer": all_paths_list[1]}
+                print("All Paths: ", all_paths_list[1])
                 with open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.txt", "wb") as f:
-                    pickle.dump(face_outer_paths, f, protocol=2)
+                    pickle.dump(all_paths, f, protocol=2)
 
-                print("Inner Paths: ", face_inner_paths) 
-
-                l_painter.draw(face_outer_paths, face_inner_paths)
-
+                #l_painter.draw(face_outer_paths, face_inner_paths)
 
                 return None
 

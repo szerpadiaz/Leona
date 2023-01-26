@@ -137,7 +137,7 @@ class pictureTaker:
             paths = ""
             while paths == "":
                 with open(WATCHFOLDER_PATH + "sketcher_result.txt", "rb") as f:    
-                    paths = pickle.load(f)                    # If the analysis is not yet one, bbox is empty
+                    paths = pickle.load(f)
                     if paths == None:
                         continue
                     print("Sketcher result:", paths)
