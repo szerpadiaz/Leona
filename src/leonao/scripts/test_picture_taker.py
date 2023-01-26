@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from naoqi import ALProxy
 from naoqi_bridge_msgs.msg import HeadTouch
+import pickle
 
 ################### Variables ###################
 USE_MEDIA_PIPE_DIRECT = False
@@ -56,7 +57,7 @@ class pictureTaker:
             with open(WATCHFOLDER_PATH + "sketcher_result.txt", "w") as f: # Reset the observation results
                 f.write("")
             cv2.imwrite(WATCHFOLDER_PATH+path, img)  
-            print("Image saved in " + WATCHFOLDER_PATH + path)")
+            print("Image saved in " + WATCHFOLDER_PATH + path)
             return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
     def analyzePicture(self, img, showAnalysis = False):
@@ -135,10 +136,9 @@ class pictureTaker:
             cv2.imwrite(WATCHFOLDER_PATH+"sketch_face.jpg", img) 
             paths = ""
             while paths == "":
-                with open(WATCHFOLDER_PATH + "sketcher_result.txt", "r") as f:
-                    paths = f.read()
-                    # If the analysis is not yet one, bbox is empty
-                    if paths == "":
+                with open(WATCHFOLDER_PATH + "sketcher_result.txt", "rb") as f:    
+                    paths = pickle.load(f)                    # If the analysis is not yet one, bbox is empty
+                    if paths == None:
                         continue
                     print("Sketcher result:", paths)
                     

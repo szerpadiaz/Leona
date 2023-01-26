@@ -6,6 +6,7 @@ import time
 import numpy as np
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+import pickle
 
 from PIL import Image
 
@@ -83,13 +84,12 @@ class Handler(FileSystemEventHandler):
                 # Potentially simplyfing the lines more
 
                 l_painter = Leonao_painter()
-                face_outer_paths = face_paths_gen.get_face_outer_path(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp")
+                face_outer_paths = face_paths_gen.get_face_inner_path(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp")
                 print("Outer Paths: ", face_outer_paths)
                 face_inner_paths = face_paths_gen.get_face_inner_path(DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp")
                 # Make sure the output here will be in CM and not in pixels (probably in the function already)
-
-                with open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.txt", "w") as f:
-                    f.write(str(face_outer_paths) + "," + str(face_inner_paths))
+                with open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.txt", "wb") as f:
+                    pickle.dump(face_outer_paths, f, protocol=2)
 
                 print("Inner Paths: ", face_inner_paths) 
 
