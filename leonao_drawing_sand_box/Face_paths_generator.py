@@ -1,6 +1,6 @@
-from svg_parser import get_paths_from_svg_file
+#from svg_parser import get_paths_from_svg_file
 from potrace_rendering import *
-from Fourier_epicycles import refine_path_using_fourier_epicycles
+from Fourier_epicycles import refine_path_using_fourier_epicycles #TODO REMOVE
 
 # Fourier Based on: https://editor.p5js.org/codingtrain/sketches/RfrZibjfL 
 
@@ -10,10 +10,13 @@ class Face_paths_generator():
         self.N_SKIP = 1
         self.USE_DFT = False
 
+    # Can delete the full function
     def generate_face_paths_from_svg(self, face_image_svg, x0, y0, x1, y1):
 
+        all_paths = []
+
         # Get all svg-paths from face image
-        all_paths = get_paths_from_svg_file(face_image_svg)
+        #all_paths = get_paths_from_svg_file(face_image_svg)
 
         # Ignore paths that are too short (they usually contain face details which we could ignore)
         svg_paths = []

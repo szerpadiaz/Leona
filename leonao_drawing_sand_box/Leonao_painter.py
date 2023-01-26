@@ -43,10 +43,10 @@ class Leonao_painter:
 
 if __name__=="__main__":
 
-    l_painter = Leonao_painter()
+    #l_painter = Leonao_painter()
 
     face_paths_gen = Face_paths_generator()   
     face_outer_paths = face_paths_gen.get_face_outer_path('david_3_sketch.bmp')
     face_inner_paths = face_paths_gen.get_face_inner_path('david_3_sketch.bmp')   
     
-    l_painter.draw(face_outer_paths, face_inner_paths)
+    #l_painter.draw(face_outer_paths, face_inner_paths)

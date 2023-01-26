@@ -1,4 +1,11 @@
-/build
-/devel
-.vcode
+.DS_Store
+torch/
+__pycache__
+**/__pycache__
+**/**/__pycache__
+**/**/**/__pycache__
+
+build/
+devel/
 src/hrl-kdl/
+.vcode
