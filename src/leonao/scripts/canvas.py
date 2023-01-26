@@ -13,6 +13,7 @@ from naoqi import ALProxy
 import math
 import motion
 import tf
+import pickle
 
 from inv_kinematic import *
 
@@ -45,7 +46,22 @@ class Canvas():
         raw_input("To go to origin, press enter.")
         self.go_to_point([0, 0])
 
+    def save_config(plane_points):
+        # Open a file for writing
+        config_file = open("plane_config.pkl", "wb")
+        # Dump the tuple of points to the file
+        pickle.dump(plane_points, config_file)
+        # Close the file
+        config_file.close()
 
+    def load_config():
+        # Open the file for reading
+        config_file = open("plane_config.pkl", "rb")
+        # Load the tuple of points from the file
+        plane_points = pickle.load(config_file)
+        # Close the file
+        config_file.close()
+        return plane_points
 
     def get_configuration(self):
         # Read 1st point/origin
