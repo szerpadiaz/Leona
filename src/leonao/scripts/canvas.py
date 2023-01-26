@@ -41,6 +41,12 @@ class Canvas():
         self.enable_arm_stiffness()
         rospy.sleep(2.0)
 
+        # Get current point and move to new origin?
+        raw_input("To go to origin, press enter.")
+        self.go_to_point([0, 0])
+
+
+
     def get_configuration(self):
         # Read 1st point/origin
         raw_input("Move to 1st point of the plane (origin). Press enter if done.")
@@ -109,8 +115,6 @@ class Canvas():
         T_bs.r3_c4 = plane_point_1[2]
         self.T_bs = T_bs
 
-        # Get current point and move to new origin?
-        # self.go_to_point([0, 0])
 
     def calculate_angles(self, x, y, z):
 
@@ -168,8 +172,9 @@ class Canvas():
         start_point = [T_st.r2_c4, T_st.r3_c4]
 
         # Move in a line parallel to the drawing plane
+        print("GO TO: start_point: ", start_point, " end_point: ", end_point)
         line_path = self.calculate_line_path(start_point, end_point)
-        x = -0.02
+        x = 0.04
         self.move_along_path(x, line_path)
 
     def move_along_path(self, x, path):
