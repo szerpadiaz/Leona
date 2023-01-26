@@ -23,7 +23,10 @@ add_service_files(
     ConvertFromCameraBottomToTorso.srv
     RestEndEffector.srv
     Stiffness.srv
+    Nao_RArm_chain_get_angles.srv
+    Nao_RArm_chain_get_transform.srv
 )
+    
 
 generate_messages(DEPENDENCIES std_msgs)
 catkin_package(CATKIN_DEPENDS message_runtime)
@@ -82,8 +85,8 @@ catkin_install_python(PROGRAMS
   scripts/main_controller.py 
   scripts/move_service.py
   scripts/drawing_setup_example.py
+  scripts/inv_kinematic.py
   scripts/test_picture_taker.py
-
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -127,3 +130,21 @@ catkin_install_python(PROGRAMS
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+INCLUDE_DIRECTORIES("/home/hrsa/eigen-3.4.0/")
+
+
+find_package(urdfdom REQUIRED)
+#include_directories(${urdfdom_INCLUDE_DIRS})
+find_package(urdfdom_headers REQUIRED)
+#include_directories(${urdfdom_headers_INCLUDE_DIRS})
+find_package(kdl_parser REQUIRED)
+#include_directories(${kdl_parser_INCLUDE_DIRS})
+
+find_package(orocos_kdl REQUIRED)
+# find_package(almath REQUIRED)
+add_executable(inv_kinematic src/inv_kinematic.cpp)
+target_link_libraries(inv_kinematic ${orocos_kdl_LIBRARIES} 
+                              ${urdfdom_LIBRARIES} 
+                              ${urdfdom_headers_LIBRARIES} 
+                              ${kdl_parser_LIBRARIES}) #${almath_LIBRARIES})

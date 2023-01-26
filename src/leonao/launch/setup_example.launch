@@ -8,6 +8,7 @@
   <arg name="nao_ip" default="$(optenv NAO_IP 127.0.0.1)" />
   <arg name="nao_port" default="$(optenv NAO_PORT 9559)" />
 
+  <node pkg="leonao" type="inv_kinematic" name="inv_kinematic" required="true" output="screen"/>
   <node pkg="leonao" type="drawing_setup_example.py" name="drawing_setup_example" required="true" args="$(arg nao_ip) $(arg nao_port)" output="screen"/>
 
   <include file="$(find nao_apps)/launch/tactile.launch" />
