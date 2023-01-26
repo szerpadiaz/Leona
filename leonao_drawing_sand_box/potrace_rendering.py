@@ -62,7 +62,11 @@ def eliminate_long_curves(path, max_segments_per_curve):
         if(total_segments < max_segments_per_curve):
             new_curves.append(curve)
 
-    path.curves = new_curves
+    if(new_curves):
+        path.curves = new_curves
+    else:
+        path.curves = path.curves[0]
+
     total_curves_eliminated = total_initial_curves - len(path.curves)
     print("Eliminated ", total_curves_eliminated, " curves (from ", total_initial_curves, ")")
    
@@ -75,7 +79,11 @@ def eliminate_short_curves(path, min_segments_per_curve):
         if(total_segments > min_segments_per_curve):
             new_curves.append(curve)
 
-    path.curves = new_curves
+    if(new_curves):
+        path.curves = new_curves
+    else:
+        path.curves = path.curves[0]
+    
     total_curves_eliminated = total_initial_curves - len(path.curves)
     print("Eliminated ", total_curves_eliminated, " curves (from ", total_initial_curves, ")")
     
@@ -99,7 +107,11 @@ def eliminate_short_segments(path, min_distance):
                 previous_segment_end_point = segment.end_point
             
             segment_index += 1
-        curve.segments = new_segments
+        
+        if(new_segments):
+            curve.segments = new_segments
+        else:
+            curve.segments = [curve.segments[0]]
 
     print("Eliminated ", total_eliminated_segments, " segments (from ", total_segments, ")")
     

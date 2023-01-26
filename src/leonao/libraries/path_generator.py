@@ -85,7 +85,11 @@ def eliminate_long_curves(path, max_segments_per_curve):
         if(total_segments < max_segments_per_curve):
             new_curves.append(curve)
 
-    path.curves = new_curves
+    if(new_curves):
+        path.curves = new_curves
+    else:
+        path.curves = path.curves[0]
+
     total_curves_eliminated = total_initial_curves - len(path.curves)
     print("Eliminated ", total_curves_eliminated, " curves (from ", total_initial_curves, ")")
    
@@ -98,7 +102,11 @@ def eliminate_short_curves(path, min_segments_per_curve):
         if(total_segments > min_segments_per_curve):
             new_curves.append(curve)
 
-    path.curves = new_curves
+    if(new_curves):
+        path.curves = new_curves
+    else:
+        path.curves = path.curves[0]
+    
     total_curves_eliminated = total_initial_curves - len(path.curves)
     print("Eliminated ", total_curves_eliminated, " curves (from ", total_initial_curves, ")")
     
@@ -122,7 +130,11 @@ def eliminate_short_segments(path, min_distance):
                 previous_segment_end_point = segment.end_point
             
             segment_index += 1
-        curve.segments = new_segments
+        
+        if(new_segments):
+            curve.segments = new_segments
+        else:
+            curve.segments = [curve.segments[0]]
 
     print("Eliminated ", total_eliminated_segments, " segments (from ", total_segments, ")")
     
@@ -177,18 +189,10 @@ class Face_paths_generator():
         self.USE_DFT = False
 
     def get_face_outer_path(self, face_image_bmp):
-        turdsize = 5
-        MIN_SEGMENTS_PER_PATH = 100
-        MIN_DISTANCE = 5
-        SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 4
-
-        # same as inner
         turdsize = 1
-        MIN_SEGMENTS_PER_PATH = 5
-        MAX_SEGMENTS_PER_PATH = 100
-        MIN_DISTANCE = 1
-        SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 5
-
+        MIN_SEGMENTS_PER_PATH = 10
+        MIN_DISTANCE = 10
+        SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 4
 
         path = get_bezier_path(face_image_bmp, turdsize)
         eliminate_short_curves(path, MIN_SEGMENTS_PER_PATH)
@@ -197,12 +201,11 @@ class Face_paths_generator():
         return face_outer_path
 
     def get_face_inner_path(self, face_image_bmp):
-        # Get face_inner_path
         turdsize = 1
         MIN_SEGMENTS_PER_PATH = 5
         MAX_SEGMENTS_PER_PATH = 100
-        MIN_DISTANCE = 1
-        SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 5
+        MIN_DISTANCE = 4
+        SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 4
 
         path = get_bezier_path(face_image_bmp, turdsize)
         eliminate_short_curves(path, MIN_SEGMENTS_PER_PATH)

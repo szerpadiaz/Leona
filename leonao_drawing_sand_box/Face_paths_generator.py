@@ -42,8 +42,8 @@ class Face_paths_generator():
         return output_paths
 
     def get_face_outer_path(self, face_image_bmp):
-        turdsize = 400
-        MIN_SEGMENTS_PER_PATH = 100
+        turdsize = 1
+        MIN_SEGMENTS_PER_PATH = 10
         MIN_DISTANCE = 10
         SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 4
 
@@ -54,9 +54,8 @@ class Face_paths_generator():
         return face_outer_path
 
     def get_face_inner_path(self, face_image_bmp):
-        # Get face_inner_path
-        turdsize = 50
-        MIN_SEGMENTS_PER_PATH = 10
+        turdsize = 1
+        MIN_SEGMENTS_PER_PATH = 5
         MAX_SEGMENTS_PER_PATH = 100
         MIN_DISTANCE = 4
         SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 4

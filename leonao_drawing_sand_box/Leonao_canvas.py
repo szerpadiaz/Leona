@@ -3,7 +3,7 @@ import tkinter
 class Leonao_canvas():
     def __init__(self):
         self.root = tkinter.Tk()
-        self.my_canvas = tkinter.Canvas(self.root, bg="white", height=1200, width=1200)
+        self.my_canvas = tkinter.Canvas(self.root, bg="white", height=600, width=600)
         self.my_canvas.pack()
         self.PEN_WIDTH = 4
 
@@ -14,7 +14,8 @@ class Leonao_canvas():
         self.my_canvas.create_line(x1, y1, x2, y2, fill="black", width=self.PEN_WIDTH)
 
     def move_to(self, point):
-        print("Moving to point ", point, " without drawing anything")
+        pass
+        #print("Moving to point ", point, " without drawing anything")
 
     def register_callback(self, ms, cb, *args):
         self.my_canvas.after(ms, cb, *args)
