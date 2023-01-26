@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 ## Example to setup the frameworks for the canvas
 
+from curses.textpad import rectangle
 from locale import normalize
 from pickle import TRUE
 from re import T
@@ -35,9 +36,7 @@ class Canvas():
         robot_port=int(9559)
         self.motion_proxy = ALProxy("ALMotion", robot_ip, robot_port)
 
-        # T_bs: Transformation of the STATION-FRAME (s) with respect to the BASE-FRAME (b)
-        plane_point_1, plane_point_2, plane_point_3 = self.get_configuration()
-        self.calculate_drawing_plane(plane_point_1, plane_point_2, plane_point_3)
+        self.configure_drawing_plane()
 
         self.enable_arm_stiffness()
         rospy.sleep(2.0)
@@ -46,7 +45,25 @@ class Canvas():
         raw_input("To go to origin, press enter.")
         self.go_to_point([0, 0])
 
-    def save_config(plane_points):
+    def configure_drawing_plane(self):
+        choice = raw_input("Configure drawing plane? (y,n) ")[0].lower()
+
+        if(choice == 'y'):
+            plane_point_1, plane_point_2, plane_point_3 = self.get_configuration()
+            self.save_config([plane_point_1, plane_point_2, plane_point_3])
+        else:
+            plane_points = self.load_config()
+            if(plane_points):
+                plane_point_1 = plane_points[0]
+                plane_point_2 = plane_points[1]
+                plane_point_3 = plane_points[2]
+            else:
+                print("There are not values to load, we  have to do the configuration")
+                plane_point_1, plane_point_2, plane_point_3 = self.get_configuration()
+
+        self.calculate_drawing_plane(plane_point_1, plane_point_2, plane_point_3)
+
+    def save_config(self, plane_points):
         # Open a file for writing
         config_file = open("plane_config.pkl", "wb")
         # Dump the tuple of points to the file
@@ -54,7 +71,7 @@ class Canvas():
         # Close the file
         config_file.close()
 
-    def load_config():
+    def load_config(self):
         # Open the file for reading
         config_file = open("plane_config.pkl", "rb")
         # Load the tuple of points from the file
@@ -209,7 +226,7 @@ class Canvas():
         # Move to the first point in the path (without drawing anything)
         self.go_to_point(path[0])
         # Draw (move in drawing plane)
-        x = 0.0
+        x = 0.002
         self.move_along_path(x, path)
 
     def draw_line(self, start_point, end_point):
@@ -238,11 +255,11 @@ class Canvas():
 
         return line_path
 
-    def draw_ellipse(self, start_point, a, b):
-        ellipse_path = self.calculate_ellipse_path(start_point, a, b)
+    def draw_ellipse(self, center, a, b):
+        ellipse_path = self.calculate_ellipse_path(center, a, b)
         self.draw_path(ellipse_path)
 
-    def calculate_ellipse_path(self, start_point, a, b):
+    def calculate_ellipse_path(self, center, a, b):
         # max distance between two consecutive points
         max_distance = 0.01
         path = []
@@ -251,24 +268,39 @@ class Canvas():
         while i <= 360:
             z = a * math.cos(math.radians(i))
             y = b * math.sin(math.radians(i))
-            path.append([y + start_point[0], z + start_point[1]])
+            path.append([y + center[0], z + center[1]])
             final_i = i
             i = i + math.degrees(math.acos(1- (max_distance**2)/(2*(a**2)) ))
         if final_i < 360:
             final_i = 360 
             z = a * math.cos(math.radians(final_i))
             y = b * math.sin(math.radians(final_i))
-            path.append([y + start_point[0], z + start_point[1]])
+            path.append([y + center[0], z + center[1]])
         return path
 
-    def draw_bezier_curve(self, control_point_1, control_point_2):
-        # at current point
-        pass
+    def draw_rectangle(self, center, width, height):
+        rectangle_path = self.calculate_rectangle_path(center, width, height)
+        self.draw_path(rectangle_path)
 
-    def draw_rectangle(self, l, w):
-        # at current point
-        pass
-
-    def draw_point(self):
-        # at current point
-        pass
+    def calculate_rectangle_path(self, center, width, height):
+        rectangle_path = []
+        y1 = center[0] - width/2.0
+        y2 = center[0] + width/2.0
+        z1 = center[1] - height/2.0
+        z2 = center[1] + height/2.0
+        
+        point_1 = [y1, z1] 
+        point_2 = [y1, z2] 
+        point_3 = [y2, z2]
+        point_4 = [y2, z1]
+        line_1 = self.calculate_line_path(point_1, point_2)
+        line_2 = self.calculate_line_path(point_2, point_3)
+        line_3 = self.calculate_line_path(point_3, point_4)
+        line_4 = self.calculate_line_path(point_4, point_1)
+        
+        rectangle_path.extend(line_1)
+        rectangle_path.extend(line_2)
+        rectangle_path.extend(line_3)
+        rectangle_path.extend(line_4)
+        
+        return rectangle_path
