@@ -96,8 +96,6 @@ class Handler(FileSystemEventHandler):
                 y_max = 0.0
                 y_min = 512.0
 
-                print(face_outer_paths)
-
                 for paths in [face_inner_paths, face_outer_paths]: # TODO: Not efficient, maybe needs to be changed
                     for list in paths:
                         for tuples in list:
@@ -129,7 +127,8 @@ class Handler(FileSystemEventHandler):
 
 
                 all_paths = {"inner": all_paths_list[0], "outer": all_paths_list[1]}
-                print("All Paths: ", all_paths_list[1])
+                print("All Paths size: ", (len(all_paths["inner"]) + len(all_paths["outer"])))
+                print("All Path points amount: ", sum([len(list) for list in all_paths["inner"]]) + sum([len(list) for list in all_paths["outer"]]))
                 with open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.txt", "wb") as f:
                     pickle.dump(all_paths, f, protocol=2)
 
