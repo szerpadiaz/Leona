@@ -7,6 +7,7 @@ import numpy as np
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import pickle
+from copy import deepcopy
 
 from PIL import Image
 
@@ -86,6 +87,10 @@ class Handler(FileSystemEventHandler):
                 l_painter = Leonao_painter()
                 face_outer_paths = face_paths_gen.get_face_inner_path(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp")
                 face_inner_paths = face_paths_gen.get_face_inner_path(DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp")
+
+                face_outer_paths_original = deepcopy(face_outer_paths)
+                face_inner_paths_original = deepcopy(face_inner_paths)
+
                 # Make sure the output here will be in 0-1 and not in pixels (probably in the function already)
                 # Scale all values in face_inner_paths and face_outer_paths to 0-1
 
@@ -123,7 +128,7 @@ class Handler(FileSystemEventHandler):
                     for i, list in enumerate(paths):
                         for j, tuples in enumerate(list):
                             (x,y) = tuples
-                            all_paths_list[p][i][j] = ((x - x_min)/longest_side, (y - y_min)/longest_side)
+                            all_paths_list[p][i][j] = [(x - x_min)/longest_side, (y - y_min)/longest_side]
 
 
                 all_paths = {"inner": all_paths_list[0], "outer": all_paths_list[1]}
@@ -132,7 +137,7 @@ class Handler(FileSystemEventHandler):
                 with open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.txt", "wb") as f:
                     pickle.dump(all_paths, f, protocol=2)
 
-                #l_painter.draw(face_outer_paths, face_inner_paths)
+                l_painter.draw(face_outer_paths_original, face_inner_paths_original)
 
                 return None
 
