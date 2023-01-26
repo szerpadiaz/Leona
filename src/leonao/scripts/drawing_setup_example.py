@@ -35,7 +35,7 @@ class Drawing_setup_tester():
         
     def load_face_path_from_pkl(self):
         # Open the file for reading
-        config_file = open("/home/hrsa/leonao/src/leonao/watchfolder/sketcher_result_2.pkl", "rb")
+        config_file = open("/home/hrsa/leonao/src/leonao/watchfolder/sketcher_result.pkl", "rb")
         # Load the tuple of points from the file
         face_path = pickle.load(config_file)
         # Close the file

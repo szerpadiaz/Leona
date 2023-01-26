@@ -10,7 +10,7 @@ import pickle
 
 ################### Variables ###################
 USE_MEDIA_PIPE_DIRECT = False
-WATCHFOLDER_PATH = "/home/hrsa/watchfolder/"
+WATCHFOLDER_PATH = "/home/hrsa/leonao/src/leonao/watchfolder/"
 
 IMAGE_ROTATION = cv2.ROTATE_90_COUNTERCLOCKWISE
 # cv2.ROTATE_90_COUNTERCLOCKWISE
@@ -26,7 +26,7 @@ class pictureTaker:
         self.minFaceSize = 0.33
         self.minBrightness = 100
         self.maxBrightness = 200
-        self.minContrast = 50
+        self.minContrast = 80
         self.front_button_pressed = False
         if local:
             self.camera = cv2.VideoCapture(0)
@@ -54,11 +54,11 @@ class pictureTaker:
                 img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
             with open(WATCHFOLDER_PATH + "face_detection_result.txt", "w") as f: # Reset the observation results
                 f.write("")
-            with open(WATCHFOLDER_PATH + "sketcher_result.txt", "w") as f: # Reset the observation results
-                f.write("")
+            with open(WATCHFOLDER_PATH + "sketcher_result.pkl", "w") as f: # Reset the observation results
+                pickle.dump("Still processing",f,protocol=2)
             cv2.imwrite(WATCHFOLDER_PATH+path, img)  
             print("Image saved in " + WATCHFOLDER_PATH + path)
-            return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            return img, cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
     def analyzePicture(self, img, showAnalysis = False):
         bbox = ""
@@ -113,7 +113,7 @@ class pictureTaker:
         # Check if the face has too little contrast
         faceContrast = np.std(face)
         if faceContrast < self.minContrast:
-            self.speak("Face too little contrast, try to get more contrast")
+            self.speak("Face too little contrast (" + str(int(faceContrast)) + "), try to get more contrast")
             return "Error: Face too little contrast, try to get more contrast", None
         
         self.speak("Looks good!")
@@ -122,7 +122,7 @@ class pictureTaker:
     def speak(self, text):
         print(text)
         if self.local:
-            os.system(f'say "{text}"')
+            os.system(str("say " + text))
         else:
             self.tts.say(text)
 
@@ -130,17 +130,23 @@ class pictureTaker:
         while not (self.front_button_pressed):
             rospy.sleep(0.2)
         self.speak("Taking a picture in 3, 2, 1. Smile!")
-        img = self.takePicture("detect_face.jpg")
-        analyzePictureResponse, img = self.analyzePicture(img, showAnalysis= True)
+        img, conv_img = self.takePicture("detect_face.jpg")
+        analyzePictureResponse, _ = self.analyzePicture(conv_img, showAnalysis= True)
         if analyzePictureResponse == "Success":
             cv2.imwrite(WATCHFOLDER_PATH+"sketch_face.jpg", img) 
-            paths = ""
-            while paths == "":
-                with open(WATCHFOLDER_PATH + "sketcher_result.txt", "rb") as f:    
+            paths = "Still processing"
+            print("looking for sketcher result")
+            while paths == "Still processing":
+                with open(WATCHFOLDER_PATH + "sketcher_result.pkl", "rb") as f:    
                     paths = pickle.load(f)
-                    if paths == None:
+                    print(paths)
+                    if paths == "Still processing":
+                        rospy.sleep(1)
+                        print("Still procesing here")
                         continue
                     print("Sketcher result:", paths)
+                    print("Executing drawing")
+                    os.system("roslaunch leonao setup_example.launch")
                     
         else:
             self.speak("Let's try again!")
@@ -158,6 +164,7 @@ if __name__ == '__main__':
     pt = pictureTaker(local = False)
     try:
         while not rospy.is_shutdown():
-            pt.main_loop()      
+            pt.main_loop()
+            pass     
     except rospy.ROSInterruptException:
         pass

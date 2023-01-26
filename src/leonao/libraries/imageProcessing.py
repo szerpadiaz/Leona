@@ -114,21 +114,34 @@ class Handler(FileSystemEventHandler):
 
                 cv2.imwrite(DIRECTORY_TO_WATCH + "/" + "thresholded.bmp", (output_img).astype(np.uint8))
 
+                l_painter = Leonao_painter()
+                
                 # Preprocess the image 
                 output_img = preprocessor(output_img)
 
+                # Invert the image
+                output_img = (output_img-255)*(-1)
+
                 inner_sketch = output_img*output_face_mask
                 outer_sketch = output_img*(1-output_face_mask)
+                noFaceSeperation = True
+                if noFaceSeperation:
+                    cv2.imwrite(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp", (output_img).astype(np.uint8))
+                    cv2.imwrite(DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp", (output_img).astype(np.uint8))
+                    face_inner_paths = face_paths_gen.get_face_outer_path(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp")
+                    face_outer_paths = []
+                
+                else:
 
-                cv2.imwrite(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp", (outer_sketch).astype(np.uint8))
-                cv2.imwrite(DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp", (inner_sketch).astype(np.uint8))
+                    cv2.imwrite(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp", (outer_sketch).astype(np.uint8))
+                    cv2.imwrite(DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp", (inner_sketch).astype(np.uint8))
 
 
-                # Potentially simplyfing the lines more
+                    # Potentially simplyfing the lines more
 
-                l_painter = Leonao_painter()
-                face_outer_paths = face_paths_gen.get_face_outer_path(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp")
-                face_inner_paths = face_paths_gen.get_face_inner_path(DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp")
+                    face_outer_paths = face_paths_gen.get_face_outer_path(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp")
+                    face_inner_paths = face_paths_gen.get_face_inner_path(DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp")
+
 
                 face_outer_paths_original = deepcopy(face_outer_paths)
                 face_inner_paths_original = deepcopy(face_inner_paths)
@@ -139,7 +152,7 @@ class Handler(FileSystemEventHandler):
                 all_paths = {"inner": all_paths_list[0], "outer": all_paths_list[1]}
                 print("All Paths size: ", (len(all_paths["inner"]) + len(all_paths["outer"])))
                 print("All Path points amount: ", sum([len(list) for list in all_paths["inner"]]) + sum([len(list) for list in all_paths["outer"]]))
-                with open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.txt", "wb") as f:
+                with open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.pkl", "wb") as f:
                     pickle.dump(all_paths, f, protocol=2)
 
                 #l_painter.draw(face_outer_paths_original, face_inner_paths_original)
@@ -149,6 +162,6 @@ class Handler(FileSystemEventHandler):
 
 
 if __name__ == '__main__':
-    DIRECTORY_TO_WATCH = "/home/michael/Documents/HRS/leonao/src/leonao/watchfolder"
+    DIRECTORY_TO_WATCH = "/home/hrsa/leonao/src/leonao/watchfolder/"
     w = Watcher(DIRECTORY_TO_WATCH)
     w.run()

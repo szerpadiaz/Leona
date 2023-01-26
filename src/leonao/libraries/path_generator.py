@@ -182,6 +182,14 @@ class Face_paths_generator():
         MIN_DISTANCE = 5
         SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 4
 
+        # same as inner
+        turdsize = 1
+        MIN_SEGMENTS_PER_PATH = 5
+        MAX_SEGMENTS_PER_PATH = 100
+        MIN_DISTANCE = 1
+        SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 5
+
+
         path = get_bezier_path(face_image_bmp, turdsize)
         eliminate_short_curves(path, MIN_SEGMENTS_PER_PATH)
         eliminate_short_segments(path, MIN_DISTANCE)
@@ -194,7 +202,7 @@ class Face_paths_generator():
         MIN_SEGMENTS_PER_PATH = 5
         MAX_SEGMENTS_PER_PATH = 100
         MIN_DISTANCE = 1
-        SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 20
+        SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 5
 
         path = get_bezier_path(face_image_bmp, turdsize)
         eliminate_short_curves(path, MIN_SEGMENTS_PER_PATH)
