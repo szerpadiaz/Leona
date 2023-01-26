@@ -85,7 +85,7 @@ class Handler(FileSystemEventHandler):
                 # Potentially simplyfing the lines more
 
                 l_painter = Leonao_painter()
-                face_outer_paths = face_paths_gen.get_face_inner_path(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp")
+                face_outer_paths = face_paths_gen.get_face_outer_path(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp")
                 face_inner_paths = face_paths_gen.get_face_inner_path(DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp")
 
                 face_outer_paths_original = deepcopy(face_outer_paths)

@@ -177,9 +177,9 @@ class Face_paths_generator():
         self.USE_DFT = False
 
     def get_face_outer_path(self, face_image_bmp):
-        turdsize = 400
+        turdsize = 5
         MIN_SEGMENTS_PER_PATH = 100
-        MIN_DISTANCE = 10
+        MIN_DISTANCE = 5
         SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 4
 
         path = get_bezier_path(face_image_bmp, turdsize)
@@ -190,11 +190,11 @@ class Face_paths_generator():
 
     def get_face_inner_path(self, face_image_bmp):
         # Get face_inner_path
-        turdsize = 50
-        MIN_SEGMENTS_PER_PATH = 10
+        turdsize = 1
+        MIN_SEGMENTS_PER_PATH = 1
         MAX_SEGMENTS_PER_PATH = 100
-        MIN_DISTANCE = 4
-        SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 4
+        MIN_DISTANCE = 1
+        SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 8
 
         path = get_bezier_path(face_image_bmp, turdsize)
         eliminate_short_curves(path, MIN_SEGMENTS_PER_PATH)
@@ -209,8 +209,8 @@ class Face_paths_generator():
 ##########################################################################################
 
 def preprocessor(img):
-    img = erode(img,3, cv2.MORPH_ELLIPSE)
+    img = erode(img,2, cv2.MORPH_ELLIPSE)
     #img = dilate(img,3, cv2.MORPH_ELLIPSE)
-    img = blur(img, 13)
+    img = blur(img, 5)
     _,img = cv2.threshold(img,127,255,cv2.THRESH_BINARY)
     return img
