@@ -64,16 +64,20 @@ class Canvas():
         self.calculate_drawing_plane(plane_point_1, plane_point_2, plane_point_3)
 
     def save_config(self, plane_points):
+        # Path to the plane config file (3 points that define the drawing plane)
+        abs_path = os.path.dirname(os.path.abspath(__file__)) + "/../config/plane_config.pkl"
         # Open a file for writing
-        config_file = open("plane_config.pkl", "wb")
+        config_file = open(abs_path, "wb")
         # Dump the tuple of points to the file
         pickle.dump(plane_points, config_file)
         # Close the file
         config_file.close()
 
     def load_config(self):
+        # Path to the plane config file (3 points that define the drawing plane)
+        abs_path = os.path.dirname(os.path.abspath(__file__)) + "/../config/plane_config.pkl"
         # Open the file for reading
-        config_file = open("plane_config.pkl", "rb")
+        config_file = open(abs_path, "rb")
         # Load the tuple of points from the file
         plane_points = pickle.load(config_file)
         # Close the file
