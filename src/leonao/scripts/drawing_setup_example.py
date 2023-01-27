@@ -13,9 +13,12 @@ class Drawing_setup_tester():
         self.canvas = Canvas()
 
         self.start = [0, 0]
-        self.face_path = self.load_face_path_from_pkl()
+        filename_face = "face_paths_obama_4.pkl"
+        self.face_path = self.load_face_path_from_pkl(filename_face)
              
-        scale_factor = 0.15
+        hight_scale_factor = 0.20
+        width_scale_factor = 0.15
+        
         print("Size inner path",len(self.face_path['inner']))
         raw_input("Press enter to start drawing.")
         paths = [self.face_path['inner'], self.face_path['outer']]
@@ -23,7 +26,7 @@ class Drawing_setup_tester():
             for i, path in enumerate(group):
                 scaled_path = []
                 for point in path:
-                    scaled_path.append([-point[0]* scale_factor - 0.025, point[1] * scale_factor])
+                    scaled_path.append([-point[0]* width_scale_factor - 0.025, point[1] * hight_scale_factor])
 
                 # print(scaled_path)
                 # print("draw path %d/%d", i+1, len(group))
@@ -33,9 +36,10 @@ class Drawing_setup_tester():
 
         self.canvas.go_to_point([0,0])
         
-    def load_face_path_from_pkl(self):
+    def load_face_path_from_pkl(self, filename):
+        abs_path = os.path.dirname(os.path.abspath(__file__)) + "/../watchfolder/" + filename
         # Open the file for reading
-        config_file = open("/home/hrsa/leonao/src/leonao/watchfolder/sketcher_result_2.pkl", "rb")
+        config_file = open(abs_path, "rb")
         # Load the tuple of points from the file
         face_path = pickle.load(config_file)
         # Close the file

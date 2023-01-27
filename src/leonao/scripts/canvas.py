@@ -193,7 +193,7 @@ class Canvas():
     def move_joints(self, joints_angles_list):
         joint_names = self.motion_proxy.getBodyNames("RArm")
         for target_angles in joints_angles_list:
-            self.motion_proxy.angleInterpolationWithSpeed(joint_names[:-1], target_angles, 0.25)
+            self.motion_proxy.angleInterpolationWithSpeed(joint_names[:-1], target_angles, 0.5)#0.25)
             #rospy.sleep(0.5)
 
     def disable_arm_stiffness(self):
