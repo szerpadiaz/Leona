@@ -89,6 +89,9 @@ class Drawing_setup_tester():
 if __name__ == '__main__':
     rospy.init_node('drawing_setup_example', anonymous=True)
     tester = Drawing_setup_tester()
+    tester.enable_arm_stiffness()
+    rospy.sleep(2.0)
+
     try:
         while not rospy.is_shutdown():
             tester.face_loop()
