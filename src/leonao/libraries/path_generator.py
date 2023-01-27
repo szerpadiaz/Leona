@@ -190,30 +190,30 @@ class Face_paths_generator():
 
     def get_face_outer_path(self, face_image_bmp):
         turdsize = 1
-        MIN_SEGMENTS_PER_PATH = 10
+        MIN_SEGMENTS_PER_PATH = 5
         MIN_DISTANCE = 10
         SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 4
 
         path = get_bezier_path(face_image_bmp, turdsize)
         eliminate_short_curves(path, MIN_SEGMENTS_PER_PATH)
         eliminate_short_segments(path, MIN_DISTANCE)
-        face_outer_path = convert_to_simple_paths(path, SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT)
-        return face_outer_path
+        face_outer_paths = convert_to_simple_paths(path, SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT)
+        return face_outer_paths
 
     def get_face_inner_path(self, face_image_bmp):
-        turdsize = 1
-        MIN_SEGMENTS_PER_PATH = 5
+        turdsize = 10
+        MIN_SEGMENTS_PER_PATH = 3
         MAX_SEGMENTS_PER_PATH = 100
-        MIN_DISTANCE = 4
+        MIN_DISTANCE = 5
         SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 4
 
         path = get_bezier_path(face_image_bmp, turdsize)
         eliminate_short_curves(path, MIN_SEGMENTS_PER_PATH)
-        eliminate_long_curves(path, MAX_SEGMENTS_PER_PATH)
+        #eliminate_long_curves(path, MAX_SEGMENTS_PER_PATH)
         eliminate_short_segments(path, MIN_DISTANCE)
-        face_inner_path = convert_to_simple_paths(path, SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT)
+        face_inner_paths = convert_to_simple_paths(path, SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT)
 
-        return face_inner_path
+        return face_inner_paths
 
 ##########################################################################################
 ################## preproccessor  ###########################################
