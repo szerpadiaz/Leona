@@ -13,7 +13,7 @@ class Drawing_setup_tester():
         self.canvas = Canvas()
 
         self.start = [0, 0]
-        filename_face = "face_paths_obama_4.pkl"
+        filename_face = "face_paths_david_4.pkl"
         self.face_path = self.load_face_path_from_pkl(filename_face)
              
         hight_scale_factor = 0.20
@@ -27,6 +27,7 @@ class Drawing_setup_tester():
                 scaled_path = []
                 for point in path:
                     scaled_path.append([-point[0]* width_scale_factor - 0.025, point[1] * hight_scale_factor])
+                    # scaled_path.append([-point[0]* width_scale_factor, point[1] * hight_scale_factor])
 
                 # print(scaled_path)
                 # print("draw path %d/%d", i+1, len(group))
@@ -89,14 +90,10 @@ class Drawing_setup_tester():
 if __name__ == '__main__':
     rospy.init_node('drawing_setup_example', anonymous=True)
     tester = Drawing_setup_tester()
-    tester.enable_arm_stiffness()
-    rospy.sleep(2.0)
-
+    
     try:
         while not rospy.is_shutdown():
             tester.face_loop()
             pass
     except rospy.ROSInterruptException:
         pass
-
-    tester.disable_arm_stiffness()     

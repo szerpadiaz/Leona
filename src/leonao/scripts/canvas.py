@@ -36,6 +36,9 @@ class Canvas():
         robot_port=int(9559)
         self.motion_proxy = ALProxy("ALMotion", robot_ip, robot_port)
 
+        self.x_drawing_plane = 0.001 #0.005 v2_turned
+        self.x_go_to_point = 0.04
+        self.speed = 0.5
         self.configure_drawing_plane()
 
         self.enable_arm_stiffness()
@@ -193,7 +196,7 @@ class Canvas():
     def move_joints(self, joints_angles_list):
         joint_names = self.motion_proxy.getBodyNames("RArm")
         for target_angles in joints_angles_list:
-            self.motion_proxy.angleInterpolationWithSpeed(joint_names[:-1], target_angles, 0.5)#0.25)
+            self.motion_proxy.angleInterpolationWithSpeed(joint_names[:-1], target_angles, self.speed)
             #rospy.sleep(0.5)
 
     def disable_arm_stiffness(self):
@@ -211,8 +214,7 @@ class Canvas():
         # Move in a line parallel to the drawing plane
         print("GO TO: start_point: ", start_point, " end_point: ", end_point)
         line_path = self.calculate_line_path(start_point, end_point)
-        x = 0.04
-        self.move_along_path(x, line_path)
+        self.move_along_path(self.x_go_to_point, line_path)
 
     def move_along_path(self, x, path):
         joints_angles_list = []
@@ -230,8 +232,7 @@ class Canvas():
         # Move to the first point in the path (without drawing anything)
         self.go_to_point(path[0])
         # Draw (move in drawing plane)
-        x = 0.001
-        self.move_along_path(x, path)
+        self.move_along_path(self.x_drawing_plane, path)
 
     def draw_line(self, start_point, end_point):
         line_path = self.calculate_line_path(start_point, end_point)
