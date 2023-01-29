@@ -79,8 +79,6 @@ class Watcher():
 
 sketcher = Sketcher()
 
-face_paths_gen = Face_paths_generator()
-
 class Handler(FileSystemEventHandler):
 
     @staticmethod
@@ -116,40 +114,27 @@ class Handler(FileSystemEventHandler):
 
                 l_painter = Leonao_painter()
                 
-                # Preprocess the image 
-                output_img = preprocessor(output_img)
-
                 # Invert the image
                 output_img = (output_img-255)*(-1)
-
                 inner_sketch = output_img*output_face_mask
                 outer_sketch = output_img*(1-output_face_mask)
-                noFaceSeperation = True
-                if noFaceSeperation:
-                    cv2.imwrite(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp", (output_img).astype(np.uint8))
-                    cv2.imwrite(DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp", (output_img).astype(np.uint8))
-                    face_inner_paths = face_paths_gen.get_face_outer_path(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp")
-                    face_outer_paths = []
-                
-                else:
+                outer_sketch_file = DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp"
+                inner_sketch_file = DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp"
+                cv2.imwrite(outer_sketch_file, (outer_sketch).astype(np.uint8))
+                cv2.imwrite(inner_sketch_file, (inner_sketch).astype(np.uint8))
 
-                    cv2.imwrite(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp", (outer_sketch).astype(np.uint8))
-                    cv2.imwrite(DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp", (inner_sketch).astype(np.uint8))
-
-
-                    # Potentially simplyfing the lines more
-
-                    face_outer_paths = face_paths_gen.get_face_outer_path(DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp")
-                    face_inner_paths = face_paths_gen.get_face_inner_path(DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp")
-
+                # Additional info about the face
+                face_info = {"inner": inner_sketch_file, "outer" : outer_sketch_file,  "top_left_point" : [70, 20], "bottom_right_point" : [420, 485]}
+                face_paths_gen = Face_paths_generator(face_info)
+                face_outer_paths = face_paths_gen.get_face_outer_path()
+                face_inner_paths = face_paths_gen.get_face_inner_path()
 
                 face_outer_paths_original = deepcopy(face_outer_paths)
                 face_inner_paths_original = deepcopy(face_inner_paths)
-
-                all_paths_list = normalizePaths([face_inner_paths, face_outer_paths])
-
                 
-                all_paths = {"inner": all_paths_list[0], "outer": all_paths_list[1]}
+                face_inner_paths_norm = face_paths_gen.normalize_face_path(face_inner_paths)
+                face_outer_paths_norm = face_paths_gen.normalize_face_path(face_outer_paths)
+                all_paths = {"inner": face_inner_paths_norm, "outer": face_outer_paths_norm}
                 print("All Paths size: ", (len(all_paths["inner"]) + len(all_paths["outer"])))
                 print("All Path points amount: ", sum([len(list) for list in all_paths["inner"]]) + sum([len(list) for list in all_paths["outer"]]))
                 with open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.pkl", "wb") as f:
