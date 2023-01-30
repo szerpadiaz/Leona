@@ -107,31 +107,32 @@ class Handler(FileSystemEventHandler):
                 img = cv2.imread(file)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 output_img, output_face_mask = sketcher.run(img)
-                output_img = output_img*255
-                ret,output_img = cv2.threshold(output_img,127,255,cv2.THRESH_BINARY)
 
-                cv2.imwrite(DIRECTORY_TO_WATCH + "/" + "thresholded.bmp", (output_img).astype(np.uint8))
+                # Getting face information (This could be moved to Face_paths_generator)
+                #
+                # Convert face_sketch and face_mask to binary
+                output_img = output_img*255 
+                _, output_img = cv2.threshold(output_img, 127, 255, cv2.THRESH_BINARY)
+                # is output_face_mask already binary?
 
-                l_painter = Leonao_painter()
-                
-                # Invert the image
-                output_img = (output_img-255)*(-1)
-                inner_sketch = output_img*output_face_mask
-                outer_sketch = output_img*(1-output_face_mask)
+                # Generate inner_sketch and outer_sketch
+                outer_sketch = cv2.bitwise_or(output_img, output_face_mask)
+                output_face_mask_inverted = cv2.bitwise_not(output_face_mask)
+                inner_sketch = cv2.bitwise_or(output_img, output_face_mask_inverted)
+
+                # Store generated files  
+                thresholded_sketch_file = DIRECTORY_TO_WATCH + "/" + "thresholded.bmp"
                 outer_sketch_file = DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp"
                 inner_sketch_file = DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp"
+                cv2.imwrite(thresholded_sketch_file, (output_img).astype(np.uint8))
                 cv2.imwrite(outer_sketch_file, (outer_sketch).astype(np.uint8))
                 cv2.imwrite(inner_sketch_file, (inner_sketch).astype(np.uint8))
-
-                # Additional info about the face
                 face_info = {"inner": inner_sketch_file, "outer" : outer_sketch_file,  "top_left_point" : [70, 20], "bottom_right_point" : [420, 485]}
+                
+                # Generate face paths
                 face_paths_gen = Face_paths_generator(face_info)
                 face_outer_paths = face_paths_gen.get_face_outer_path()
                 face_inner_paths = face_paths_gen.get_face_inner_path()
-
-                face_outer_paths_original = deepcopy(face_outer_paths)
-                face_inner_paths_original = deepcopy(face_inner_paths)
-                
                 face_inner_paths_norm = face_paths_gen.normalize_face_path(face_inner_paths)
                 face_outer_paths_norm = face_paths_gen.normalize_face_path(face_outer_paths)
                 all_paths = {"inner": face_inner_paths_norm, "outer": face_outer_paths_norm}
@@ -140,6 +141,9 @@ class Handler(FileSystemEventHandler):
                 with open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.pkl", "wb") as f:
                     pickle.dump(all_paths, f, protocol=2)
 
+                #l_painter = Leonao_painter()
+                #face_outer_paths_original = deepcopy(face_outer_paths)
+                #face_inner_paths_original = deepcopy(face_inner_paths)
                 #l_painter.draw(face_outer_paths_original, face_inner_paths_original)
 
                 return None
