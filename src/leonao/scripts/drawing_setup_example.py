@@ -18,6 +18,7 @@ class Drawing_setup_tester():
              
         hight_scale_factor = 0.20
         width_scale_factor = 0.15
+        y_offset = 0.01
         
         print("Size inner path",len(self.face_path['inner']))
         raw_input("Press enter to start drawing.")
@@ -26,7 +27,7 @@ class Drawing_setup_tester():
             for i, path in enumerate(group):
                 scaled_path = []
                 for point in path:
-                    scaled_path.append([-point[0]* width_scale_factor - 0.025, point[1] * hight_scale_factor])
+                    scaled_path.append([-point[0]* width_scale_factor - y_offset, point[1] * hight_scale_factor])
                     # scaled_path.append([-point[0]* width_scale_factor, point[1] * hight_scale_factor])
 
                 # print(scaled_path)

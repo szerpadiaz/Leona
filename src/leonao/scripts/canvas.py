@@ -36,9 +36,9 @@ class Canvas():
         robot_port=int(9559)
         self.motion_proxy = ALProxy("ALMotion", robot_ip, robot_port)
 
-        self.x_drawing_plane = 0.001 #0.005 v2_turned
+        self.x_drawing_plane = 0.005 #0.005 v2_turned
         self.x_go_to_point = 0.04
-        self.speed = 0.5
+        self.speed = 0.4
         self.configure_drawing_plane()
 
         self.enable_arm_stiffness()
@@ -78,7 +78,7 @@ class Canvas():
 
     def load_config(self):
         # Path to the plane config file (3 points that define the drawing plane)
-        abs_path = os.path.dirname(os.path.abspath(__file__)) + "/../config/plane_config.pkl"
+        abs_path = os.path.dirname(os.path.abspath(__file__)) + "/../config/plane_config_v1.pkl"
         # Open the file for reading
         config_file = open(abs_path, "rb")
         # Load the tuple of points from the file
