@@ -28,6 +28,14 @@ public:
         this->num_of_joints = arm_chain.getNrOfJoints();
         this->prev_joints_angles = KDL::JntArray(this->num_of_joints);
 
+        // this->prev_joints_angles(0) = 0.26695799827575684;
+        // this->prev_joints_angles(1) = -1.0124821662902832;
+        // this->prev_joints_angles(2) = 0.11194014549255371;
+        // this->prev_joints_angles(3) = 1.4005842208862305;
+        // // this->prev_joints_angles(4) = 1.2609061002731323;
+        // this->prev_joints_angles(4) = -0.1;
+        // this->prev_joints_angles(5) = 0.7408000230789185;
+
         // Construct forward and inverse kinematics solvers
         this->fk_p_solver = new KDL::ChainFkSolverPos_recursive(arm_chain);
         //Eigen::Matrix<double,6,1> mask;
@@ -35,8 +43,10 @@ public:
         //this->ik_p_solver = KDL::ChainIkSolverPos_LMA(arm_chain, mask);
 
         // Joint-limits:         ['RShoulderPitch',    'RShoulderRoll',    'RElbowYaw',         'RElbowRoll',        'RWristYaw',         RHand']
-        this->joint_min_limits = {-2.0856685638427734, -1.326450228691101, -2.0856685638427734, 0.03490658476948738, -1.8238691091537476, 0.0};
-        this->joint_max_limits = {2.0856685638427734,  0.3141592741012573,  2.0856685638427734, 1.5446163415908813,   1.8238691091537476, 1.};
+        // this->joint_min_limits = {-2.0856685638427734, -1.326450228691101, -2.0856685638427734, 0.03490658476948738, -1.8238691091537476, 0.0};
+        // this->joint_max_limits = {2.0856685638427734,  0.3141592741012573,  2.0856685638427734, 1.5446163415908813,   1.8238691091537476, 1.};
+        this->joint_min_limits = {-2.0856685638427734, -1.326450228691101, -2.0856685638427734, 0.03490658476948738, -0.2, 0.0};// 1.1, 0.0};
+        this->joint_max_limits = {2.0856685638427734,  0.3141592741012573,  2.0856685638427734, 1.5446163415908813, -0.04, 1.0}; // 1.4, 1.};
     }
 
     KDL::Chain create_chain(const std::string& base_link, const std::string& end_link) {
@@ -175,7 +185,7 @@ bool get_angles_callback(leonao::Nao_RArm_chain_get_angles::Request& req,
         auto z = transform.p[2];
         double wx, wy, wz;
         transform.M.GetRPY(wx, wy, wz);
-        std::cout << "fk->new_position6D: "<< x  << ", " << y << ", " << z << ", " << wx << ", " << wy << ", " << wz << std::endl;     
+        // std::cout << "fk->new_position6D: "<< x  << ", " << y << ", " << z << ", " << wx << ", " << wy << ", " << wz << std::endl;     
     }
 
     return true;
