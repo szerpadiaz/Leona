@@ -58,6 +58,64 @@ def normalizePaths(input_paths):
     
     return all_paths_list
 
+def get_bb_points_ratio43(mask, y_pad = (0.8, 0.3)):
+    """
+    Finds extended upper left and lower right points from input face mask.
+    Ratio of BBox is ~ 4:3
+    :param mask: output mask from sketcher
+    :param y_pad: Paddings added to upper (idx 0) and lower (idx 1) edge of mask
+    :return: dictionary containing upper left and lower richt points coords: [x,y]
+    """
+    x2 = np.argmax((mask!=0).argmax(axis=0))
+    y2 = np.argmax((mask!=0).argmax(axis=1))
+    x1 = (mask!=0).argmax(axis=0)
+    x1 = (x1!=0).argmax()
+    y1 = (mask!=0).argmax(axis=1)
+    y1 = (y1!=0).argmax()
+
+    x_mid = (x1 + x2)//2
+    y_mid = (y1 + y2)//2
+    b_width = x2 - x1
+    b_height = y2 - y1
+
+    img_height, img_width = mask.shape
+
+    # make box square based on longer edge
+    if b_width > b_height:
+        b_height = b_width
+        y1 = y_mid - b_height//2
+        y2 = y_mid + b_height//2
+    elif b_width < b_height:
+        b_width = b_height
+        x1 = x_mid - b_width//2
+        x2 = x_mid + b_width//2
+    
+    # Extended y coords
+    y1_p = y_mid - int((b_height/2)*(1+y_pad[0]))
+    y2_p = y_mid + int((b_height/2)*(1+y_pad[1]))
+    
+    # Makes sure new coords stay in image boundaries
+    if y1_p < 0:
+        y1_p = 0
+    if y2_p > img_height:
+        y2_p = img_height - 1
+
+    p_height = y2_p - y1_p
+    p_width = int(p_height/4*3)
+
+    # extended x coords
+    x1_p = x_mid - p_width//2
+    x2_p = x_mid + p_width//2
+    
+    # Makes sure new x coords stay in image boundaries
+    if x1_p < 0:
+        x1_p = 0
+    if x2_p > img_width:
+        x2_p = img_width - 1
+
+    return [x1_p, y1_p], [x2_p, y2_p]
+
+
 class Watcher():
     def __init__(self, DIRECTORY_TO_WATCH):
         self.observer = Observer()
@@ -127,7 +185,10 @@ class Handler(FileSystemEventHandler):
                 cv2.imwrite(thresholded_sketch_file, (output_img).astype(np.uint8))
                 cv2.imwrite(outer_sketch_file, (outer_sketch).astype(np.uint8))
                 cv2.imwrite(inner_sketch_file, (inner_sketch).astype(np.uint8))
-                face_info = {"inner": inner_sketch_file, "outer" : outer_sketch_file,  "top_left_point" : [70, 20], "bottom_right_point" : [420, 485]}
+                
+                # Calculate new boundaries to crop to same ratio as drawing plane (4:3)
+                top_left_point, bottom_right_point = get_bb_points_ratio43(output_face_mask, y_pad=(0.8, 0.3))
+                face_info = {"inner": inner_sketch_file, "outer" : outer_sketch_file,  "top_left_point" : top_left_point, "bottom_right_point" : bottom_right_point}
                 
                 # Generate face paths
                 face_paths_gen = Face_paths_generator(face_info)
