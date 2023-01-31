@@ -18,7 +18,7 @@ class Drawing_setup_tester():
         
         hight_scale_factor = 0.20
         width_scale_factor = 0.15
-        y_offset = 0.0
+        y_offset = 0.025
         
         print("Size inner path",len(self.face_path['inner']))
         raw_input("Press enter to start drawing.")

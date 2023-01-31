@@ -35,13 +35,17 @@ class Canvas():
         robot_port=int(9559)
         self.motion_proxy = ALProxy("ALMotion", robot_ip, robot_port)
 
-        self.x_drawing_plane = 0.0 #0.005 v2_turned
-        self.x_go_to_point = 0.04
-        self.speed = 0.4
-        self.configure_drawing_plane()
+        joints_names = self.motion_proxy.getBodyNames("RArm")
+        joints_angles = self.motion_proxy.getAngles(joints_names, True)
+        print(joints_angles)
 
         self.enable_arm_stiffness()
         rospy.sleep(2.0)
+
+        self.x_drawing_plane = 0.002 #0.005 v2_turned
+        self.x_go_to_point = 0.03
+        self.speed = 0.4
+        self.configure_drawing_plane()
 
         # Get current point and move to new origin?
         raw_input("To go to origin, press enter.")
@@ -86,26 +90,66 @@ class Canvas():
         config_file.close()
         return plane_points
 
-    def get_configuration(self):
+    def move_to_plane_point(self, i, start_point, end_point):
         # Read 1st point/origin
-        raw_input("Move to 1st point of the plane (origin). Press enter if done.")
-        plane_point_1 = self.get_position_bt()
-        # plane_point_1 = ?
-        print("1st point read. ", plane_point_1)
+        print("Moving to point #", i ," of the plane.")
+        line_path = self.calculate_line_path_3D(start_point, end_point)
+        angles_list = []
+        for point in line_path:
+            angles = self.get_angles(point)
+            angles_list.append(angles)
+        self.move_joints(angles_list)
+        raw_input("Press enter to continue.")
+        
 
-        # Read 2nd point
-        raw_input("Move to 2nd point of the plane. Press enter if done.")
-        plane_point_2 = self.get_position_bt()
-        # plane_point_2 = ?
-        print("2nd point read. ", plane_point_2)
+    def get_configuration(self):
+        success = False
+        x_offset = 0.0
 
-        # Read 3rd point
-        raw_input("Move to 3rd point of the plane. Press enter if done.")
-        plane_point_3 = self.get_position_bt()
-        # plane_point_3 = ?
-        print("3rd point read. ", plane_point_3)
+        plane_point_1 = [0.2587827944755554 - x_offset - 0.003, -0.1749013215303421 + 0.01, 0.04904642328619957]
+        plane_point_2 = [0.24889575958251953 - x_offset - 0.002, -0.13087525963783264 + 0.005, 0.22855517268180847]
+        plane_point_3 = [0.25683870911598206 - x_offset - 0.003, -0.0006110721733421087, -0.01757928542792797]
+        plane_point_0 = plane_point_1    
+        while not success:
+            # Read 1st point/origin
+            self.move_to_plane_point(1, plane_point_0, plane_point_1)
+
+            # Read 2nd point
+            self.move_to_plane_point(2, plane_point_1, plane_point_2)
+
+            # Read 3rd point
+            self.move_to_plane_point(3, plane_point_2, plane_point_3)
+            
+            plane_point_0 = plane_point_3
+            success = 'y' != raw_input("Move again? (y,n) ")[0].lower()
 
         return plane_point_1, plane_point_2, plane_point_3
+
+    def calculate_line_path_3D(self, start_point, end_point):
+        line_path = []
+        x0 = start_point[0]
+        y0 = start_point[1]
+        z0 = start_point[2]
+        line_path.append([x0, y0, z0])
+
+        xn = end_point[0]
+        yn = end_point[1]
+        zn = end_point[2]
+        length = math.sqrt((xn-x0)**2 + (yn-y0)**2 + (zn-z0)**2) * 100
+        xi = x0
+        yi = y0
+        zi = z0
+        for i in range(1, int(length) + 1):
+             xi = (xn - x0) /length * i + x0
+             yi = (yn - y0) /length * i + y0
+             zi = (zn - z0) /length * i + z0
+             line_path.append([xi, yi, zi])
+
+        line_path.append([xn, yn, zn])
+
+        print("line_path: ", line_path)
+
+        return line_path
 
     def calculate_drawing_plane(self, plane_point_1, plane_point_2, plane_point_3):
         plane_point_1 = np.array(plane_point_1)
@@ -162,7 +206,13 @@ class Canvas():
 
         # T_bg: Transformation of the GOAL-FRAME (g) with respect to the BASE-FRAME (b)
         T_bg = self.T_bs * T_sg
-        position6D = [T_bg.r1_c4, T_bg.r2_c4, T_bg.r3_c4, 0, 0, 0]
+        point = [T_bg.r1_c4, T_bg.r2_c4, T_bg.r3_c4]
+
+        return self.get_angles(point)
+
+    def get_angles(self, point):
+        
+        position6D = [point[0], point[1], point[2], 0, 0, 0]
 
         # get angles (using service)
         rospy.wait_for_service('Nao_RArm_chain_get_angles')
@@ -195,6 +245,7 @@ class Canvas():
     def move_joints(self, joints_angles_list):
         joint_names = self.motion_proxy.getBodyNames("RArm")
         for target_angles in joints_angles_list:
+            print(target_angles[4])
             self.motion_proxy.angleInterpolationWithSpeed(joint_names[:-1], target_angles, self.speed)
             #rospy.sleep(0.5)
 
