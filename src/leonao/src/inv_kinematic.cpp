@@ -20,7 +20,7 @@ public:
 
         // Add Pen to the end of the chain
         auto joint = KDL::Joint("PenTip");
-        auto frame = KDL::Frame(KDL::Vector(0.08,0.0,0.035));
+        auto frame = KDL::Frame(KDL::Vector(0.08,0.0,0.04));
         auto segment = KDL::Segment("PenTip",joint,frame);
         arm_chain.addSegment(segment);
         print_chain_info(arm_chain);

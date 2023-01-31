@@ -15,26 +15,26 @@ class Drawing_setup_tester():
         self.start = [0, 0]
         filename_face = "face_paths_david_4.pkl"
         self.face_path = self.load_face_path_from_pkl(filename_face)
-             
+        
         hight_scale_factor = 0.20
         width_scale_factor = 0.15
-        y_offset = 0.01
+        y_offset = 0.0
         
         print("Size inner path",len(self.face_path['inner']))
         raw_input("Press enter to start drawing.")
         paths = [self.face_path['inner'], self.face_path['outer']]
         for group in paths:
-            for i, path in enumerate(group):
-                scaled_path = []
-                for point in path:
-                    scaled_path.append([-point[0]* width_scale_factor - y_offset, point[1] * hight_scale_factor])
-                    # scaled_path.append([-point[0]* width_scale_factor, point[1] * hight_scale_factor])
+           for i, path in enumerate(group):
+               scaled_path = []
+               for point in path:
+                   scaled_path.append([-point[0]* width_scale_factor - y_offset, point[1] * hight_scale_factor])
+                   # scaled_path.append([-point[0]* width_scale_factor, point[1] * hight_scale_factor])
 
-                # print(scaled_path)
-                # print("draw path %d/%d", i+1, len(group))
-                # raw_input("Press enter to draw")
-                
-                self.canvas.draw_path(scaled_path)
+               # print(scaled_path)
+               # print("draw path %d/%d", i+1, len(group))
+               # raw_input("Press enter to draw")
+               
+               self.canvas.draw_path(scaled_path)
 
         self.canvas.go_to_point([0,0])
         
@@ -95,6 +95,10 @@ if __name__ == '__main__':
     try:
         while not rospy.is_shutdown():
             tester.face_loop()
-            pass
+            #x_drawing_plane = float(input("Enter the x_drawing_plane")) / 100
+            #tester.canvas.x_drawing_plane = x_drawing_plane
+            #tester.rectangle_loop()
+            #tester.canvas.draw_rectangle([-0.075, 0.08], 0.15, 0.20)
+
     except rospy.ROSInterruptException:
         pass
