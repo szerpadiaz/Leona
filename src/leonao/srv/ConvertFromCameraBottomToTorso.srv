@@ -1,5 +1,0 @@
-float32[] position_from_camera
-float32[] rotation_from_camera
---------------------------------
-float32[] position_from_torso
-float32[] rotation_from_camera

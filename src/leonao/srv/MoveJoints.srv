@@ -1,7 +1,0 @@
-string effector_name
-float32[] position
-float32[] orientation
-float32 speed
-float32 time
---------------------------------
-bool success
