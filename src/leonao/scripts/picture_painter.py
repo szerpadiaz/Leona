@@ -43,16 +43,3 @@ class Picture_painter():
                self.canvas.draw_path(scaled_path)
 
         self.canvas.go_to_point([0,0])
-
-if __name__ == '__main__':
-    rospy.init_node('drawing_setup_example', anonymous=True)
-    painter = Picture_painter()
-    
-    try:
-        while not rospy.is_shutdown():
-            filename_face = "face_paths_david_4.pkl"
-            raw_input("Press enter to start drawing: ", filename_face)
-            painter.draw_face()
-
-    except rospy.ROSInterruptException:
-        pass
