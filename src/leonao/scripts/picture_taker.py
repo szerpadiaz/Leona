@@ -8,7 +8,10 @@ import pickle
 
 ################### Variables ###################
 USE_MEDIA_PIPE_DIRECT = False
+
 WATCHFOLDER_PATH = "/home/hrsa/leonao/src/leonao/watchfolder/"
+SKETCH_FACE_FILE = WATCHFOLDER_PATH + "sketch_face.jpg"
+SKETCH_FACE_PATHS_FILE = WATCHFOLDER_PATH + "sketcher_result.pkl"
 
 IMAGE_ROTATION = cv2.ROTATE_90_COUNTERCLOCKWISE
 # cv2.ROTATE_90_COUNTERCLOCKWISE
@@ -122,6 +125,25 @@ class pictureTaker:
         else:
             self.tts.say(text)
 
+    def take_stylish_picture(self):
+        self.speak("Taking a picture in 3, 2, 1. Smile!")
+        success = False
+        img, conv_img = self.takePicture("detect_face.jpg")
+        analyzePictureResponse, _ = self.analyzePicture(conv_img, showAnalysis= True)
+        if analyzePictureResponse == "Success":
+            cv2.imwrite(SKETCH_FACE_FILE, img) 
+            paths = "Still processing"
+            print("looking for sketcher result")
+            while paths == "Still processing":
+                with open(SKETCH_FACE_PATHS_FILE, "rb") as f:    
+                    paths = pickle.load(f)
+                    print(paths)
+                    if paths == "Still processing":
+                        rospy.sleep(1)
+                        print("Still procesing here")
+                        continue
+                    print("Sketcher result:", paths)
+        return success    
 
     ################ Running Callbacks ################
 
