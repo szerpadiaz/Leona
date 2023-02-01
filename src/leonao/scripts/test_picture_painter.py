@@ -54,7 +54,7 @@ class Test_picture_painter():
     def face_loop(self):
         filename_face = "face_paths_david_4.pkl"
         raw_input("Press enter to start drawing: ", filename_face)
-        self.painter.draw_face()
+        self.painter.draw_face(filename_face)
 
 if __name__ == '__main__':
     rospy.init_node('drawing_setup_example', anonymous=True)

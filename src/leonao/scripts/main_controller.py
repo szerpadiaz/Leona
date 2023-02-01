@@ -5,70 +5,60 @@ import rospy
 #from move_controller import Move_controller
 
 from naoqi_bridge_msgs.msg import HeadTouch
+from naoqi import ALProxy
+
+from picture_taker import *
+from picture_painter import *
+
+INTRO_MSG_1 = "Hello! I am Leonao, Leonao Davinci. Welcome to my studio!"
+INTRO_MSG_2 = "If you want a beautiful picture, please press the button on the front of my head"
+TAKING_PICTURE_INSTRUCTIONS_1 = "OK! lets get started"
+TAKING_PICTURE_INSTRUCTIONS_2 = "Please position yourself in front of me and get ready for the picture"
+MSG_AFTER_SUCCESS_PICTURE_TAKEN = "Well done! please relax and enjoy while I paint you"
+MSG_PICTURE_TAKEN_FAILED = "OH no, let's try again!"
+MSG_PAINTING_IS_DONE = "I am done, here it is your beautiful picture"
+MSG_THANKS = "Thanks for letting me sketching you."
+MSG_BEFORE_SIESTA = "I am not going to take a Siesta. Wake me up!"
 
 class Main_leonao_controller():
     def __init__(self):
         self.front_button_pressed = False
-        self.rear_button_pressed = False
+
+        self.robot_ip=str(os.getenv("NAO_IP"))
+        self.robot_port=int(9559)
+        self.tts = ALProxy("ALTextToSpeech", self.robot_ip, 9559)
         self.head_sub = rospy.Subscriber('/tactile_touch', HeadTouch, self.head_touch_callback)
 
-        #self.move_controller = Move_controller()
-
-        self.record_timer = None
-        self.recording_started = False
-        self.drawing_points = []
+        self.picture_taker =  pictureTaker()
+        self.picture_painter = Picture_painter()
+        self.speak(INTRO_MSG_1)
+        self.speak(INTRO_MSG_2)
+    
+    def speak(self, text):
+        print(text)
+        if self.local:
+            os.system(str("say " + text))
+        else:
+            self.tts.say(text)
 
     def head_touch_callback(self, head_touch_event):
         self.front_button_pressed = head_touch_event.button == HeadTouch.buttonFront and head_touch_event.state == HeadTouch.statePressed
-        self.rear_button_pressed = head_touch_event.button == HeadTouch.buttonRear and head_touch_event.state == HeadTouch.statePressed
 
-    def start_record_timer(self):
-        self.record_timer = rospy.Timer(rospy.Duration(0.125), self.record_drawing_points, oneshot=False)
-
-    def stop_record_timer(self):
-        if self.record_timer:
-            self.record_timer.shutdown()
-
-    def record_drawing_points(self, timer_event):
-    	pass
-        #self.drawing_points.append(self.move_controller.get_position('RArm'))
-
-    def disable_arm_stiffness(self):
-        effector_names = ["RShoulderPitch", "RShoulderRoll", "ElbowYaw", "RElbowRoll", "RWristYaw"]
-        stiffness_values = [0.0, 0.0, 0.0, 0.0, 0.0]
-        #self.move_controller.set_stiffness(effector_names, stiffness_values)
-        pass
-
-    def enable_arm_stiffness(self):
-        #self.move_controller.set_stiffness(["RArm"], [1.0])
-        pass
-
-    def draw(self):
-        #self.move_controller.move_end_effector_with_speed('RArm', self.drawing_points, 0.2)
-        #self.move_controller.move_end_effector_with_time('RArm', self.drawing_points, 0.1)
-        print("Sending MOVE ENDED *********    i = ", len(self.drawing_points)) 
 
     def drawing_loop(self):
         if self.front_button_pressed:
             self.front_button_pressed = False
-            self.stop_record_timer()
-            if (self.recording_started):
-                self.recording_started = False
-                print(self.drawing_points)
-                print("###### RECORDING STOPPED ######")
+            self.speak(TAKING_PICTURE_INSTRUCTIONS_1)
+            self.speak(TAKING_PICTURE_INSTRUCTIONS_2)
+            success = self.take_stylish_picture()
+            if success:
+                self.speak(MSG_AFTER_SUCCESS_PICTURE_TAKEN)
+                self.picture_painter.draw_face(SKETCH_FACE_PATHS_FILE)
+                self.speak(MSG_PAINTING_IS_DONE)
             else:
-                self.disable_arm_stiffness()
-                print("Move to initial position")
-                rospy.sleep(1.0)
-                print("RECORDING STARTED")
-                self.drawing_points = []
-                self.start_record_timer()
-                self.recording_started = True
-
-        if self.rear_button_pressed and not self.recording_started:
-            self.rear_button_pressed = False
-            self.enable_arm_stiffness()
-            self.draw()
+                self.speak(MSG_PICTURE_TAKEN_FAILED)
+            self.speak(MSG_THANKS)
+            self.speak(MSG_BEFORE_SIESTA)
 
 if __name__ == '__main__':
 
@@ -80,6 +70,7 @@ if __name__ == '__main__':
         while not rospy.is_shutdown():
             main_controller.drawing_loop()
             #rate.sleep()
+            #ros::spin()?
 
     except rospy.ROSInterruptException:
         pass
