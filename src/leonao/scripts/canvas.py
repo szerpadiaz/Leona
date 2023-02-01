@@ -27,8 +27,6 @@ from leonao.srv import Nao_RArm_chain_get_angles, Nao_RArm_chain_get_transform
 # - STATION-FRAME : the frame attached to the Table where Leonao is painting (this is our workstation universal reference)
 # - GOAL-FRAME    : the frame indicating where the tip of the marker should move to
 
-BASE_FRAME_ID = motion.FRAME_TORSO
-
 class Canvas():
     def __init__(self):
         robot_ip=str(os.getenv("NAO_IP"))

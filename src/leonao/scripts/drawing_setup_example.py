@@ -28,11 +28,6 @@ class Drawing_setup_tester():
                scaled_path = []
                for point in path:
                    scaled_path.append([-point[0]* width_scale_factor - y_offset, point[1] * hight_scale_factor])
-                   # scaled_path.append([-point[0]* width_scale_factor, point[1] * hight_scale_factor])
-
-               # print(scaled_path)
-               # print("draw path %d/%d", i+1, len(group))
-               # raw_input("Press enter to draw")
                
                self.canvas.draw_path(scaled_path)
 
