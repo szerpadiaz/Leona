@@ -2,7 +2,7 @@
 ## Main application controller
 
 import rospy
-from move_controller import Move_controller
+#from move_controller import Move_controller
 
 from naoqi_bridge_msgs.msg import HeadTouch
 
@@ -12,7 +12,7 @@ class Main_leonao_controller():
         self.rear_button_pressed = False
         self.head_sub = rospy.Subscriber('/tactile_touch', HeadTouch, self.head_touch_callback)
 
-        self.move_controller = Move_controller()
+        #self.move_controller = Move_controller()
 
         self.record_timer = None
         self.recording_started = False
@@ -30,19 +30,22 @@ class Main_leonao_controller():
             self.record_timer.shutdown()
 
     def record_drawing_points(self, timer_event):
-        self.drawing_points.append(self.move_controller.get_position('RArm'))
+    	pass
+        #self.drawing_points.append(self.move_controller.get_position('RArm'))
 
     def disable_arm_stiffness(self):
         effector_names = ["RShoulderPitch", "RShoulderRoll", "ElbowYaw", "RElbowRoll", "RWristYaw"]
         stiffness_values = [0.0, 0.0, 0.0, 0.0, 0.0]
-        self.move_controller.set_stiffness(effector_names, stiffness_values)
+        #self.move_controller.set_stiffness(effector_names, stiffness_values)
+        pass
 
     def enable_arm_stiffness(self):
-        self.move_controller.set_stiffness(["RArm"], [1.0])
+        #self.move_controller.set_stiffness(["RArm"], [1.0])
+        pass
 
     def draw(self):
         #self.move_controller.move_end_effector_with_speed('RArm', self.drawing_points, 0.2)
-        self.move_controller.move_end_effector_with_time('RArm', self.drawing_points, 0.1)
+        #self.move_controller.move_end_effector_with_time('RArm', self.drawing_points, 0.1)
         print("Sending MOVE ENDED *********    i = ", len(self.drawing_points)) 
 
     def drawing_loop(self):
