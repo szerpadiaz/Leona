@@ -27,7 +27,6 @@ from leonao.srv import Nao_RArm_chain_get_angles, Nao_RArm_chain_get_transform
 # - STATION-FRAME : the frame attached to the Table where Leonao is painting (this is our workstation universal reference)
 # - GOAL-FRAME    : the frame indicating where the tip of the marker should move to
 
-TIP_POSITION_WITH_RESPECT_TO_W = [0.08,0.0,0.035]
 BASE_FRAME_ID = motion.FRAME_TORSO
 
 class Canvas():
@@ -36,10 +35,17 @@ class Canvas():
         robot_port=int(9559)
         self.motion_proxy = ALProxy("ALMotion", robot_ip, robot_port)
 
-        self.configure_drawing_plane()
+        joints_names = self.motion_proxy.getBodyNames("RArm")
+        joints_angles = self.motion_proxy.getAngles(joints_names, True)
+        print(joints_angles)
 
         self.enable_arm_stiffness()
         rospy.sleep(2.0)
+
+        self.x_drawing_plane = 0.002 #0.005 v2_turned
+        self.x_go_to_point = 0.03
+        self.speed = 0.4
+        self.configure_drawing_plane()
 
         # Get current point and move to new origin?
         raw_input("To go to origin, press enter.")
@@ -64,42 +70,86 @@ class Canvas():
         self.calculate_drawing_plane(plane_point_1, plane_point_2, plane_point_3)
 
     def save_config(self, plane_points):
+        # Path to the plane config file (3 points that define the drawing plane)
+        abs_path = os.path.dirname(os.path.abspath(__file__)) + "/../config/plane_config.pkl"
         # Open a file for writing
-        config_file = open("plane_config.pkl", "wb")
+        config_file = open(abs_path, "wb")
         # Dump the tuple of points to the file
         pickle.dump(plane_points, config_file)
         # Close the file
         config_file.close()
 
     def load_config(self):
+        # Path to the plane config file (3 points that define the drawing plane)
+        abs_path = os.path.dirname(os.path.abspath(__file__)) + "/../config/plane_config.pkl"
         # Open the file for reading
-        config_file = open("plane_config.pkl", "rb")
+        config_file = open(abs_path, "rb")
         # Load the tuple of points from the file
         plane_points = pickle.load(config_file)
         # Close the file
         config_file.close()
         return plane_points
 
-    def get_configuration(self):
+    def move_to_plane_point(self, i, start_point, end_point):
         # Read 1st point/origin
-        raw_input("Move to 1st point of the plane (origin). Press enter if done.")
-        plane_point_1 = self.get_position_bt()
-        # plane_point_1 = ?
-        print("1st point read. ", plane_point_1)
+        print("Moving to point #", i ," of the plane.")
+        line_path = self.calculate_line_path_3D(start_point, end_point)
+        angles_list = []
+        for point in line_path:
+            angles = self.get_angles(point)
+            angles_list.append(angles)
+        self.move_joints(angles_list)
+        raw_input("Press enter to continue.")
+        
 
-        # Read 2nd point
-        raw_input("Move to 2nd point of the plane. Press enter if done.")
-        plane_point_2 = self.get_position_bt()
-        # plane_point_2 = ?
-        print("2nd point read. ", plane_point_2)
+    def get_configuration(self):
+        success = False
+        x_offset = 0.0
 
-        # Read 3rd point
-        raw_input("Move to 3rd point of the plane. Press enter if done.")
-        plane_point_3 = self.get_position_bt()
-        # plane_point_3 = ?
-        print("3rd point read. ", plane_point_3)
+        plane_point_1 = [0.2587827944755554 - x_offset - 0.003, -0.1749013215303421 + 0.01, 0.04904642328619957]
+        plane_point_2 = [0.24889575958251953 - x_offset - 0.002, -0.13087525963783264 + 0.005, 0.22855517268180847]
+        plane_point_3 = [0.25683870911598206 - x_offset - 0.003, -0.0006110721733421087, -0.01757928542792797]
+        plane_point_0 = plane_point_1    
+        while not success:
+            # Read 1st point/origin
+            self.move_to_plane_point(1, plane_point_0, plane_point_1)
+
+            # Read 2nd point
+            self.move_to_plane_point(2, plane_point_1, plane_point_2)
+
+            # Read 3rd point
+            self.move_to_plane_point(3, plane_point_2, plane_point_3)
+            
+            plane_point_0 = plane_point_3
+            success = 'y' != raw_input("Move again? (y,n) ")[0].lower()
 
         return plane_point_1, plane_point_2, plane_point_3
+
+    def calculate_line_path_3D(self, start_point, end_point):
+        line_path = []
+        x0 = start_point[0]
+        y0 = start_point[1]
+        z0 = start_point[2]
+        line_path.append([x0, y0, z0])
+
+        xn = end_point[0]
+        yn = end_point[1]
+        zn = end_point[2]
+        length = math.sqrt((xn-x0)**2 + (yn-y0)**2 + (zn-z0)**2) * 100
+        xi = x0
+        yi = y0
+        zi = z0
+        for i in range(1, int(length) + 1):
+             xi = (xn - x0) /length * i + x0
+             yi = (yn - y0) /length * i + y0
+             zi = (zn - z0) /length * i + z0
+             line_path.append([xi, yi, zi])
+
+        line_path.append([xn, yn, zn])
+
+        print("line_path: ", line_path)
+
+        return line_path
 
     def calculate_drawing_plane(self, plane_point_1, plane_point_2, plane_point_3):
         plane_point_1 = np.array(plane_point_1)
@@ -156,7 +206,13 @@ class Canvas():
 
         # T_bg: Transformation of the GOAL-FRAME (g) with respect to the BASE-FRAME (b)
         T_bg = self.T_bs * T_sg
-        position6D = [T_bg.r1_c4, T_bg.r2_c4, T_bg.r3_c4, 0, 0, 0]
+        point = [T_bg.r1_c4, T_bg.r2_c4, T_bg.r3_c4]
+
+        return self.get_angles(point)
+
+    def get_angles(self, point):
+        
+        position6D = [point[0], point[1], point[2], 0, 0, 0]
 
         # get angles (using service)
         rospy.wait_for_service('Nao_RArm_chain_get_angles')
@@ -189,7 +245,8 @@ class Canvas():
     def move_joints(self, joints_angles_list):
         joint_names = self.motion_proxy.getBodyNames("RArm")
         for target_angles in joints_angles_list:
-            self.motion_proxy.angleInterpolationWithSpeed(joint_names[:-1], target_angles, 0.25)
+            print(target_angles[4])
+            self.motion_proxy.angleInterpolationWithSpeed(joint_names[:-1], target_angles, self.speed)
             #rospy.sleep(0.5)
 
     def disable_arm_stiffness(self):
@@ -207,8 +264,7 @@ class Canvas():
         # Move in a line parallel to the drawing plane
         print("GO TO: start_point: ", start_point, " end_point: ", end_point)
         line_path = self.calculate_line_path(start_point, end_point)
-        x = 0.04
-        self.move_along_path(x, line_path)
+        self.move_along_path(self.x_go_to_point, line_path)
 
     def move_along_path(self, x, path):
         joints_angles_list = []
@@ -226,8 +282,7 @@ class Canvas():
         # Move to the first point in the path (without drawing anything)
         self.go_to_point(path[0])
         # Draw (move in drawing plane)
-        x = 0.001
-        self.move_along_path(x, path)
+        self.move_along_path(self.x_drawing_plane, path)
 
     def draw_line(self, start_point, end_point):
         line_path = self.calculate_line_path(start_point, end_point)
