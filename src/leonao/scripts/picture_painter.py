@@ -41,7 +41,8 @@ class Picture_painter():
                 for point in path:
                     scaled_path.append([-point[0]* width_scale_factor - y_offset, point[1] * hight_scale_factor])
                 scaled_path = self.reduceClosePoints(scaled_path, distances[j])
-                self.canvas.draw_path(scaled_path)
+                if scaled_path:
+                    self.canvas.draw_path(scaled_path)
 
         self.canvas.go_to_point([0,0])
 
@@ -50,8 +51,13 @@ class Picture_painter():
         print("Number of points before: Inside: " + str(len(path))) #+ "points outside: " + str(sum(len(s) for s in paths[1])))
         #for group in paths:
         new_path = []
+        first_point = True
         for j, point in enumerate(path):
-            if j == 0:
+            if (point[0] < -0.13 and point[1] > 0.17) or point[1] > 18:
+                print("deleted point", point)
+                continue
+            if first_point == True:
+                first_point = False
                 new_path.append(point)
             else:
                 if self.distance(point, new_path[-1]) > distance:

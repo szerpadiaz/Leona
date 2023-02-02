@@ -125,7 +125,7 @@ class Main_leonao_controller():
             self.speak(TAKING_PICTURE_INSTRUCTIONS_2, nonBlocking=True)
             success = self.picture_taker.take_stylish_picture()
             paths_file = SKETCH_FACE_PATHS_FILE
-            #paths_file = WATCHFOLDER_PATH + "ingo_face_paths.pkl"
+            #paths_file = WATCHFOLDER_PATH + "sergio_sketcher_result.pkl"
             #success = True
             if success:
                 self.speak(MSG_AFTER_SUCCESS_PICTURE_TAKEN, nonBlocking=True)
