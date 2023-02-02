@@ -166,6 +166,14 @@ class Handler(FileSystemEventHandler):
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 output_img, output_face_mask = sketcher.run(img)
 
+                ## Eroding face mask
+                # Calculate iterations based on image size
+                shape = output_img.shape
+                iterations = int(shape[1]/64)
+
+                kernel = np.ones((3,3),np.uint8)
+                output_face_mask = cv2.erode(output_face_mask, kernel, iterations = iterations)
+
                 # Getting face information (This could be moved to Face_paths_generator)
                 #
                 # Convert face_sketch and face_mask to binary
@@ -173,10 +181,15 @@ class Handler(FileSystemEventHandler):
                 _, output_img = cv2.threshold(output_img, 127, 255, cv2.THRESH_BINARY)
                 # is output_face_mask already binary?
 
+                # Calculate new boundaries to crop to same ratio as drawing plane (4:3)
+                top_left_point, bottom_right_point = get_bb_points_ratio43(output_face_mask, y_pad=(0.8, 0.3))
+                
                 # Generate inner_sketch and outer_sketch
-                outer_sketch = cv2.bitwise_or(output_img, output_face_mask)
-                output_face_mask_inverted = cv2.bitwise_not(output_face_mask)
-                inner_sketch = cv2.bitwise_or(output_img, output_face_mask_inverted)
+                inner_sketch = output_img * output_face_mask + (1-output_face_mask)*255
+                outer_sketch = output_img * (1 - output_face_mask) + (output_face_mask*255)
+                # outer_sketch = cv2.bitwise_or(output_img, output_face_mask)
+                # output_face_mask_inverted = cv2.bitwise_not(output_face_mask)
+                # inner_sketch = cv2.bitwise_or(output_img, output_face_mask_inverted)
 
                 # Store generated files  
                 thresholded_sketch_file = DIRECTORY_TO_WATCH + "/" + "thresholded.bmp"
@@ -186,8 +199,6 @@ class Handler(FileSystemEventHandler):
                 cv2.imwrite(outer_sketch_file, (outer_sketch).astype(np.uint8))
                 cv2.imwrite(inner_sketch_file, (inner_sketch).astype(np.uint8))
                 
-                # Calculate new boundaries to crop to same ratio as drawing plane (4:3)
-                top_left_point, bottom_right_point = get_bb_points_ratio43(output_face_mask, y_pad=(0.8, 0.3))
                 face_info = {"inner": inner_sketch_file, "outer" : outer_sketch_file,  "top_left_point" : top_left_point, "bottom_right_point" : bottom_right_point}
                 
                 # Generate face paths
@@ -212,6 +223,6 @@ class Handler(FileSystemEventHandler):
 
 
 if __name__ == '__main__':
-    DIRECTORY_TO_WATCH = "/home/hrsa/leonao/src/leonao/watchfolder/"
+    DIRECTORY_TO_WATCH = "/home/michael/Documents/HRS/leonao/src/leonao/watchfolder"
     w = Watcher(DIRECTORY_TO_WATCH)
     w.run()
