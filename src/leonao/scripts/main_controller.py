@@ -6,6 +6,8 @@ import rospy
 from naoqi_bridge_msgs.msg import HeadTouch
 from naoqi import ALProxy
 
+import random
+
 from picture_taker import *
 from picture_painter import *
 
@@ -34,7 +36,13 @@ class Main_leonao_controller():
         self.speak(INTRO_MSG_2)
     
     def speak(self, text):
-        self.tts.say(text)
+        if type(text) == str:
+            self.tts.say(text)
+        elif type(text) == list:
+            self.speak(random.choice(text))
+        else:
+            print("Speech input: " + text + " of type: " + type(text) + " not recognized!")
+            
 
     def head_touch_callback(self, head_touch_event):
         self.wake_up = head_touch_event.button == HeadTouch.buttonFront and head_touch_event.state == HeadTouch.statePressed
