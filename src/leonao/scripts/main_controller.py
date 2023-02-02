@@ -11,13 +11,14 @@ import random
 from picture_taker import *
 from picture_painter import *
 
-INTRO_MSG_1 = "Hello! I am Leonao, Leonao Davinci. Welcome to my studio!"
-INTRO_MSG_2 = "If you want a beautiful picture, please press the button on the front of my head"
-TAKING_PICTURE_INSTRUCTIONS_1 = "OK! lets get started"
-TAKING_PICTURE_INSTRUCTIONS_2 = "Please position yourself in front of me and get ready for the picture"
-MSG_AFTER_SUCCESS_PICTURE_TAKEN = "Well done! please relax and enjoy while I paint you"
+INTRO_MSG_1 = ["Hello! I am Leonao, Leonao Davinci. Welcome to my studio!", "Step right up, step right up! I, the great Leonardo Da Vinci, am here to paint your portrait!"]
+INTRO_MSG_2 = ["If you want a beautiful picture, please press the button on the front of my head", "I can draw a masterpiece for you. Just come here and touch my head to start."]
+TAKING_PICTURE_INSTRUCTIONS_1 = ["OK! lets get started", "Alright, let's do this!", "Here we go!"]
+TAKING_PICTURE_INSTRUCTIONS_2 = ["Please position yourself in front of me and get ready for the picture.", "Hold still, my friend! I don't want to capture your nerves, just your beauty."]
+
+MSG_AFTER_SUCCESS_PICTURE_TAKEN = "Well done! please relax and enjoy while I paint you. Don't worry, I'll make you look better than you do in real life."
 MSG_PICTURE_TAKEN_FAILED = "OH no, let's try again!"
-MSG_PAINTING_IS_DONE = "I am done, here it is your beautiful picture"
+MSG_PAINTING_IS_DONE = "I am done, here it is your beautiful picture! That would be 5 Euro please!"
 MSG_THANKS = "Thanks for letting me sketching you."
 MSG_BEFORE_SIESTA = "I am not going to take a Siesta. Wake me up!"
 
