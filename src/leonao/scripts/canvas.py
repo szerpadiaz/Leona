@@ -29,10 +29,14 @@ class Canvas():
         robot_ip=str(os.getenv("NAO_IP"))
         robot_port=int(9559)
         self.motion_proxy = ALProxy("ALMotion", robot_ip, robot_port)
-
-        joints_names = self.motion_proxy.getBodyNames("RArm")
-        joints_angles = self.motion_proxy.getAngles(joints_names, True)
-        print(joints_angles)
+        
+        # while 1:
+        #     joints_names = self.motion_proxy.getBodyNames("RArm")
+        #     joints_angles = self.motion_proxy.getAngles(joints_names, True)
+        #     print(joints_angles)
+        #     input = raw_input("Press c to break.")
+        #     if input == "c":
+        #         break
 
         self.enable_arm_stiffness()
         rospy.sleep(2.0)
@@ -43,11 +47,11 @@ class Canvas():
         self.configure_drawing_plane()
 
         # Get current point and move to new origin?
-        # raw_input("To go to origin, press enter.")
+        raw_input("To go to origin, press enter.")
         self.go_to_point([0, 0])
 
     def configure_drawing_plane(self):
-        choice = "n" # raw_input("Configure drawing plane? (y,n) ")[0].lower()
+        choice = raw_input("Configure drawing plane? (y,n) ")[0].lower()
 
         if(choice == 'y'):
             plane_point_1, plane_point_2, plane_point_3 = self.get_configuration()
@@ -101,9 +105,9 @@ class Canvas():
         success = False
         x_offset = 0.0
 
-        plane_point_1 = [0.2587827944755554 - x_offset - 0.003, -0.1749013215303421 + 0.01, 0.04904642328619957]
-        plane_point_2 = [0.24889575958251953 - x_offset - 0.002, -0.13087525963783264 + 0.005, 0.22855517268180847]
-        plane_point_3 = [0.25683870911598206 - x_offset - 0.003, -0.0006110721733421087, -0.01757928542792797]
+        plane_point_1 = [0.247 - x_offset, -0.17, 0.05]
+        plane_point_2 = [0.24 - x_offset, -0.125, 0.23]
+        plane_point_3 = [0.245 - x_offset, 0.0, -0.02]
         plane_point_0 = plane_point_1    
         while not success:
             # Read 1st point/origin

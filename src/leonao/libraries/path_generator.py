@@ -163,32 +163,6 @@ class Face_paths_generator():
         self.bottom_right_point = face_info["bottom_right_point"]
         self.outer_img_file = face_info["outer"]
         self.inner_img_file = face_info["inner"]
-        
-        #face_sketch_file = "../test_imgs/monalisa_sketch.bmp"
-        #face_mask_file = "../test_imgs/monalisa_sketch_mask.png"
-        #face_inner_sketch_file = "../test_imgs/monalisa_sketch_outer_2.bmp"
-        #face_outer_sketch_file = "../test_imgs/monalisa_sketch_inner_2.bmp"
-        #
-        ## Read face_sketch and face_mask
-        #output_img = cv2.imread(face_sketch_file, cv2.IMREAD_GRAYSCALE)
-        #_, output_img = cv2.threshold(output_img, 127, 255, cv2.THRESH_BINARY)
-        #output_face_mask = cv2.imread(face_mask_file, cv2.IMREAD_GRAYSCALE)
-        #_, output_face_mask = cv2.threshold(output_face_mask, 127, 255, cv2.THRESH_BINARY)
-        #
-        ## Generate face_outer_sketch
-        #outer_sketch = cv2.bitwise_or(output_img, output_face_mask)
-        #cv2.imwrite(face_outer_sketch_file, (outer_sketch).astype(np.uint8))
-        #
-        ## Generate face_inner_sketch_file
-        #output_face_mask_inverted = cv2.bitwise_not(output_face_mask)
-        #inner_sketch = cv2.bitwise_or(output_img, output_face_mask_inverted)
-        #cv2.imwrite(face_inner_sketch_file, (inner_sketch).astype(np.uint8))
-        #
-        ###cv2.imshow("output_img", output_img)
-        ##cv2.imshow("output_face_mask", output_face_mask)
-        ##cv2.imshow("outer_sketch", outer_sketch)
-        ##cv2.imshow("inner_sketch", inner_sketch)
-        ##cv2.waitKey(0)
 
     def get_face_outer_path(self):
         img = cv2.imread(self.outer_img_file, cv2.IMREAD_GRAYSCALE)
@@ -216,11 +190,11 @@ class Face_paths_generator():
         img = cv2.imread(self.inner_img_file, cv2.IMREAD_GRAYSCALE)
         _, img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
 
-        #img = erode(img,1, cv2.MORPH_ELLIPSE)
-        #img = dilate(img, 1, cv2.MORPH_ELLIPSE)
+        img = erode(img,1, cv2.MORPH_ELLIPSE)
+        img = dilate(img, 1, cv2.MORPH_ELLIPSE)
 
-        img = erode(img, 2, cv2.MORPH_CROSS)
-        img = dilate(img, 2, cv2.MORPH_CROSS)
+        #img = erode(img, 2, cv2.MORPH_CROSS)
+        #img = dilate(img, 2, cv2.MORPH_CROSS)
  
         #cv2.imshow("face_outer", img)
         #cv2.waitKey(0)

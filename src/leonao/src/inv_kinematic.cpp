@@ -28,13 +28,12 @@ public:
         this->num_of_joints = arm_chain.getNrOfJoints();
         this->prev_joints_angles = KDL::JntArray(this->num_of_joints);
 
-        // this->prev_joints_angles(0) = 0.26695799827575684;
-        // this->prev_joints_angles(1) = -1.0124821662902832;
-        // this->prev_joints_angles(2) = 0.11194014549255371;
-        // this->prev_joints_angles(3) = 1.4005842208862305;
-        // // this->prev_joints_angles(4) = 1.2609061002731323;
-        // this->prev_joints_angles(4) = -0.1;
-        // this->prev_joints_angles(5) = 0.7408000230789185;
+        // this->prev_joints_angles(0) = 0.658128023147583;
+        // this->prev_joints_angles(1) = -0.6918759346008301;
+        // this->prev_joints_angles(2) = 1.0722241401672363;
+        // this->prev_joints_angles(3) = 1.112192153930664;
+        // this->prev_joints_angles(4) = 1.4679961204528809;
+        // this->prev_joints_angles(5) = 0.23720002174377441;
 
         // Construct forward and inverse kinematics solvers
         this->fk_p_solver = new KDL::ChainFkSolverPos_recursive(arm_chain);
@@ -45,8 +44,10 @@ public:
         // Joint-limits:         ['RShoulderPitch',    'RShoulderRoll',    'RElbowYaw',         'RElbowRoll',        'RWristYaw',         RHand']
         // this->joint_min_limits = {-2.0856685638427734, -1.326450228691101, -2.0856685638427734, 0.03490658476948738, -1.8238691091537476, 0.0};
         // this->joint_max_limits = {2.0856685638427734,  0.3141592741012573,  2.0856685638427734, 1.5446163415908813,   1.8238691091537476, 1.};
-        this->joint_min_limits = {-2.0856685638427734, -1.326450228691101, -2.0856685638427734, 0.03490658476948738, -0.2, 0.0};// 1.1, 0.0};
-        this->joint_max_limits = {2.0856685638427734,  0.3141592741012573,  2.0856685638427734, 1.5446163415908813, -0.07, 1.0}; // 1.4, 1.};
+        // this->joint_min_limits = {-2.0856685638427734, -1.326450228691101, -2.0856685638427734, 0.03490658476948738, -0.2, 0.0};// 1.1, 0.0};
+        // this->joint_max_limits = {2.0856685638427734,  0.3141592741012573,  2.0856685638427734, 1.5446163415908813, -0.07, 1.0}; // 1.4, 1.};
+        this->joint_min_limits = {-2.0856685638427734, -1.326450228691101, -2.0856685638427734, 0.03490658476948738, -0.2, 0.0};
+        this->joint_max_limits = {2.0856685638427734,  0.3141592741012573,  2.0856685638427734, 1.5446163415908813, 1.82, 1.};
     }
 
     KDL::Chain create_chain(const std::string& base_link, const std::string& end_link) {

@@ -78,7 +78,7 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
   scripts/main_controller.py
-  scripts/drawing_setup_example.py
+  scripts/test_picture_painter.py
   scripts/test_picture_taker.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
