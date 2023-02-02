@@ -213,10 +213,10 @@ class Handler(FileSystemEventHandler):
                 with open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.pkl", "wb") as f:
                     pickle.dump(all_paths, f, protocol=2)
 
-                #l_painter = Leonao_painter()
-                #face_outer_paths_original = deepcopy(face_outer_paths)
-                #face_inner_paths_original = deepcopy(face_inner_paths)
-                #l_painter.draw(face_outer_paths_original, face_inner_paths_original)
+                l_painter = Leonao_painter()
+                face_outer_paths_original = deepcopy(face_outer_paths)
+                face_inner_paths_original = deepcopy(face_inner_paths)
+                l_painter.draw(face_outer_paths_original, face_inner_paths_original)
 
                 return None
 

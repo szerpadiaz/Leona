@@ -79,6 +79,7 @@ if __name__=="__main__":
     face_info = {"inner": "../test_imgs/obama_inner.bmp", "outer" :  "../test_imgs/obama_outer.bmp", "top_left_point" : [70, 20], "bottom_right_point" : [420, 485]}
     face_info = {"inner": "../test_imgs/david_3_sketch_inner.bmp", "outer" :  "../test_imgs/david_3_sketch_outer.bmp", "top_left_point" : [70, 20], "bottom_right_point" : [420, 485]}
     face_info = {"inner": "../test_imgs/monalisa_sketch_inner.bmp", "outer" :  "../test_imgs/monalisa_sketch_outer.bmp", "top_left_point" : [100, 2], "bottom_right_point" : [450, 467]}
+    face_info = {"inner": "../test_imgs/ingo_sketch_inner.bmp", "outer" :  "../test_imgs/ingo_sketch_outer.bmp", "top_left_point" : [120,57], "bottom_right_point" : [420, 457]}
 
     face_paths_gen = Face_paths_generator(face_info)
     face_outer_paths = face_paths_gen.get_face_outer_path()

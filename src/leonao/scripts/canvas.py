@@ -43,11 +43,11 @@ class Canvas():
         self.configure_drawing_plane()
 
         # Get current point and move to new origin?
-        raw_input("To go to origin, press enter.")
+        # raw_input("To go to origin, press enter.")
         self.go_to_point([0, 0])
 
     def configure_drawing_plane(self):
-        choice = raw_input("Configure drawing plane? (y,n) ")[0].lower()
+        choice = "n" # raw_input("Configure drawing plane? (y,n) ")[0].lower()
 
         if(choice == 'y'):
             plane_point_1, plane_point_2, plane_point_3 = self.get_configuration()

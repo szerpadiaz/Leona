@@ -31,7 +31,7 @@ class pictureTaker:
         self.minFaceSize = 0.33
         self.minBrightness = 100
         self.maxBrightness = 200
-        self.minContrast = 80
+        self.minContrast = 70
         if local:
             self.camera = cv2.VideoCapture(0)
         if not self.local:
@@ -39,10 +39,10 @@ class pictureTaker:
             import rospy
             from sensor_msgs.msg import Image
             from cv_bridge import CvBridge
+            self.bridge = CvBridge()
             self.robot_ip=str(os.getenv("NAO_IP"))
             self.robot_port=int(9559)
             self.tts = ALProxy("ALTextToSpeech", self.robot_ip, 9559)
-            self.bridge = CvBridge()
             self.image_sub = rospy.Subscriber("/nao_robot/camera/top/camera/image_raw", Image, self.newImageCallback)
             print("Picuture Taker initialized")
 
@@ -130,7 +130,7 @@ class pictureTaker:
         if self.local:
             os.system(str("say " + text))
         else:
-            print(text)
+            self.tts.say(text)
 
     def take_stylish_picture(self):
         self.speak("Taking a picture in 3, 2, 1. Smile!")
