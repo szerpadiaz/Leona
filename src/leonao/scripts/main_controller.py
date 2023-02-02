@@ -128,7 +128,7 @@ class Main_leonao_controller():
             #paths_file = WATCHFOLDER_PATH + "ingo_face_paths.pkl"
             #success = True
             if success:
-                self.speak(MSG_AFTER_SUCCESS_PICTURE_TAKEN)
+                self.speak(MSG_AFTER_SUCCESS_PICTURE_TAKEN, nonBlocking=True)
                 self.picture_painter.draw_face(paths_file)
                 self.speak(MSG_PAINTING_IS_DONE)
                 self.speak(MSG_THANKS)
