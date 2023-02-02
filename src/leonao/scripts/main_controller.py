@@ -28,8 +28,8 @@ class Main_leonao_controller():
         self.tts = ALProxy("ALTextToSpeech", self.robot_ip, 9559)
         self.head_sub = rospy.Subscriber('/tactile_touch', HeadTouch, self.head_touch_callback)
 
-        self.picture_taker =  pictureTaker(useTestPicture = True)
-        #self.picture_painter = Picture_painter()
+        self.picture_taker =  pictureTaker(useTestPicture = False)
+        self.picture_painter = Picture_painter()
         self.speak(INTRO_MSG_1)
         self.speak(INTRO_MSG_2)
     
@@ -49,7 +49,7 @@ class Main_leonao_controller():
             success = self.picture_taker.take_stylish_picture()
             if success:
                 self.speak(MSG_AFTER_SUCCESS_PICTURE_TAKEN)
-                #self.picture_painter.draw_face(SKETCH_FACE_PATHS_FILE)
+                self.picture_painter.draw_face(SKETCH_FACE_PATHS_FILE)
                 self.speak(MSG_PAINTING_IS_DONE)
             else:
                 self.speak(MSG_PICTURE_TAKEN_FAILED)
@@ -62,10 +62,10 @@ if __name__ == '__main__':
 
     try:
         main_controller = Main_leonao_controller()
-        rate = rospy.Rate(10) # 10hz
+        #rate = rospy.Rate(10) # 10hz
         while not rospy.is_shutdown():
             main_controller.main_loop()
-            rate.sleep()
+            #rate.sleep()
             #ros::spin()?
 
     except rospy.ROSInterruptException:
