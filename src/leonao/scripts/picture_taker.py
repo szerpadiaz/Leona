@@ -28,10 +28,10 @@ class pictureTaker:
             # cv2.ROTATE_90_COUNTERCLOCKWISE
             # cv2.ROTATE_180
             # cv2.ROTATE_90_CLOCKWISE
-        self.minFaceSize = 0.33
-        self.minBrightness = 100
-        self.maxBrightness = 200
-        self.minContrast = 70
+        self.minFaceSize = 0.1 #0.33
+        self.minBrightness = 50 #100
+        self.maxBrightness = 200 
+        self.minContrast = 50 #70
         if local:
             self.camera = cv2.VideoCapture(0)
         if not self.local:

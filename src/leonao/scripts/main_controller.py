@@ -83,13 +83,13 @@ class Main_leonao_controller():
 
         self.picture_taker =  pictureTaker(useTestPicture = False)
         self.picture_painter = Picture_painter()
+        from cv_bridge import CvBridge
+        self.bridge = CvBridge()
+        imageTop = rospy.Subscriber("/nao_robot/camera/top/camera/image_raw", Image, self.showImageCallback)
         self.speak(INTRO_MSG_1)
         self.speak(INTRO_MSG_2)
         self.wake_up =  False
-        from cv_bridge import CvBridge
-        self.bridge = CvBridge()
 
-        imageTop = rospy.Subscriber("/nao_robot/camera/top/camera/image_raw", Image, self.showImageCallback)
 
     def showImageCallback(self, img_msg):
         img = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding='bgr8')
@@ -100,9 +100,9 @@ class Main_leonao_controller():
     def speak(self, text, nonBlocking = False):
         if type(text) == str:
             if nonBlocking:
-                self.tts.post.say(text)
+                self.tts.post.say("\\vol=100\\" + text + "\\pau=500\\")
             else:
-                self.tts.say(text)
+                self.tts.say("\\vol=100\\" + text + "\\pau=500\\")
         elif type(text) == list:
             self.speak(random.choice(text))
         else:
@@ -122,13 +122,14 @@ class Main_leonao_controller():
         if self.wake_up:
             self.wake_up = False
             self.speak(TAKING_PICTURE_INSTRUCTIONS_1)
-            self.speak(TAKING_PICTURE_INSTRUCTIONS_2)
+            self.speak(TAKING_PICTURE_INSTRUCTIONS_2, nonBlocking=True)
             success = self.picture_taker.take_stylish_picture()
             paths_file = SKETCH_FACE_PATHS_FILE
             #paths_file = WATCHFOLDER_PATH + "ingo_face_paths.pkl"
             #success = True
             if success:
                 self.speak(MSG_AFTER_SUCCESS_PICTURE_TAKEN, nonBlocking=True)
+                raw_input("press enter to draw")
                 self.picture_painter.draw_face(paths_file)
                 self.speak(MSG_PAINTING_IS_DONE)
                 self.speak(MSG_THANKS)
