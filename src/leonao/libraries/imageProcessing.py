@@ -166,7 +166,7 @@ class Handler(FileSystemEventHandler):
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 output_img, output_face_mask = sketcher.run(img)
 
-                top_left_point, bottom_right_point = get_bb_points_ratio43(output_face_mask, y_pad=(0.8, 0.3))
+                top_left_point, bottom_right_point = get_bb_points_ratio43(output_face_mask, y_pad=(0.8, 0.05))
                 
                 ## Eroding face mask
                 # Calculate iterations based on image size
