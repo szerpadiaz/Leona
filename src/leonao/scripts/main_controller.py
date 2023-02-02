@@ -28,26 +28,28 @@ class Main_leonao_controller():
         self.tts = ALProxy("ALTextToSpeech", self.robot_ip, 9559)
         self.head_sub = rospy.Subscriber('/tactile_touch', HeadTouch, self.head_touch_callback)
 
-        self.picture_taker =  pictureTaker()
-        self.picture_painter = Picture_painter()
+        self.picture_taker =  pictureTaker(useTestPicture = True)
+        #self.picture_painter = Picture_painter()
         self.speak(INTRO_MSG_1)
         self.speak(INTRO_MSG_2)
     
     def speak(self, text):
-        self.tts.say(text)
+        print(text)
 
     def head_touch_callback(self, head_touch_event):
         self.wake_up = head_touch_event.button == HeadTouch.buttonFront and head_touch_event.state == HeadTouch.statePressed
 
     def main_loop(self):
+        raw_input("Press enter")
+        self.wake_up =  True
         if self.wake_up:
             self.wake_up = False
             self.speak(TAKING_PICTURE_INSTRUCTIONS_1)
             self.speak(TAKING_PICTURE_INSTRUCTIONS_2)
-            success = self.take_stylish_picture()
+            success = self.picture_taker.take_stylish_picture()
             if success:
                 self.speak(MSG_AFTER_SUCCESS_PICTURE_TAKEN)
-                self.picture_painter.draw_face(SKETCH_FACE_PATHS_FILE)
+                #self.picture_painter.draw_face(SKETCH_FACE_PATHS_FILE)
                 self.speak(MSG_PAINTING_IS_DONE)
             else:
                 self.speak(MSG_PICTURE_TAKEN_FAILED)

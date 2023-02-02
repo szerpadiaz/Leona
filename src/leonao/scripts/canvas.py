@@ -12,11 +12,8 @@ import numpy as np
 import almath
 from naoqi import ALProxy
 import math
-import motion
 import tf
 import pickle
-
-from inv_kinematic import *
 
 from leonao.srv import Nao_RArm_chain_get_angles, Nao_RArm_chain_get_transform
 
