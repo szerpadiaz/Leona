@@ -52,12 +52,13 @@ class Test_picture_painter():
         self.canvas.draw_rectangle(center, width, height)
         
     def face_loop(self):
-        filename_face = "face_paths_david_4.pkl"
-        raw_input("Press enter to start drawing: ", filename_face)
-        self.painter.draw_face(filename_face)
+        #filename_face = "ingo_face_paths.pkl"
+        #raw_input("Press enter to start drawing: ", filename_face)
+        #self.painter.draw_face(filename_face)
+        pass
 
 if __name__ == '__main__':
-    rospy.init_node('drawing_setup_example', anonymous=True)
+    rospy.init_node('test_picture_painter', anonymous=True)
     tester = Test_picture_painter()
     
     try:
