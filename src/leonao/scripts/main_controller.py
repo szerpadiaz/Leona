@@ -35,8 +35,8 @@ class Main_leonao_controller():
 
         self.picture_taker =  pictureTaker(useTestPicture = False)
         self.picture_painter = Picture_painter()
-        self.speak(INTRO_MSG_1)
-        self.speak(INTRO_MSG_2)
+        # self.speak(INTRO_MSG_1)
+        # self.speak(INTRO_MSG_2)
         self.wake_up =  False
         from cv_bridge import CvBridge
         self.bridge = CvBridge()
@@ -67,18 +67,18 @@ class Main_leonao_controller():
         self.wake_up = True
         if self.wake_up:
             self.wake_up = False
-            self.speak(TAKING_PICTURE_INSTRUCTIONS_1)
-            self.speak(TAKING_PICTURE_INSTRUCTIONS_2)
+            # self.speak(TAKING_PICTURE_INSTRUCTIONS_1)
+            # self.speak(TAKING_PICTURE_INSTRUCTIONS_2)
             #success = self.picture_taker.take_stylish_picture()
             #paths_file = SKETCH_FACE_PATHS_FILE
             paths_file = WATCHFOLDER_PATH + "ingo_face_paths.pkl"
             success = True
             if success:
-                self.speak(MSG_AFTER_SUCCESS_PICTURE_TAKEN)
+                # self.speak(MSG_AFTER_SUCCESS_PICTURE_TAKEN)
                 self.picture_painter.draw_face(paths_file)
                 self.speak(MSG_PAINTING_IS_DONE)
-                self.speak(MSG_THANKS)
-                self.speak(MSG_BEFORE_SIESTA)
+                # self.speak(MSG_THANKS)
+                # self.speak(MSG_BEFORE_SIESTA)
             else:
                 self.speak(MSG_PICTURE_TAKEN_FAILED)
 
