@@ -187,9 +187,9 @@ class Handler(FileSystemEventHandler):
 
                 # Show bounding box restricted by top_left_point and bottom_right_point
                 print(top_left_point, bottom_right_point)
-                cv2.rectangle(output_img, top_left_point, bottom_right_point, (0, 255, 0), 2)
-                cv2.imshow("output_img", output_img)
-                cv2.waitKey(0)
+                #cv2.rectangle(output_img, top_left_point, bottom_right_point, (0, 255, 0), 2)
+                #cv2.imshow("output_img", output_img)
+                #cv2.waitKey(0)
                 
                 # Generate inner_sketch and outer_sketch
                 inner_sketch = output_img * output_face_mask + (1-output_face_mask)*255

@@ -11,5 +11,5 @@
   <node pkg="leonao" type="inv_kinematic" name="inv_kinematic" required="true" output="screen"/>
   <node pkg="leonao" type="main_controller.py" name="main_controller" required="true" args="$(arg nao_ip) $(arg nao_port)" output="screen"/>
 
-  <!-- <include file="$(find nao_apps)/launch/tactile.launch" /> -->
+  <include file="$(find nao_apps)/launch/tactile.launch" />
 </launch>

@@ -41,18 +41,18 @@ class Canvas():
         self.enable_arm_stiffness()
         rospy.sleep(2.0)
 
-        self.x_drawing_plane = 0.002 #0.005 v2_turned
+        self.x_drawing_plane = 0.0 #0.005 v2_turned
         self.x_go_to_point = 0.03
         self.speed = 0.4
         self.configure_drawing_plane()
 
         # Get current point and move to new origin?
-        raw_input("To go to origin, press enter.")
+        #raw_input("To go to origin, press enter.")
         self.go_to_point([0, 0])
 
     def configure_drawing_plane(self):
-        choice = raw_input("Configure drawing plane? (y,n) ")[0].lower()
-
+        #choice = raw_input("Configure drawing plane? (y,n) ")[0].lower()
+        choice = 'n'
         if(choice == 'y'):
             plane_point_1, plane_point_2, plane_point_3 = self.get_configuration()
             self.save_config([plane_point_1, plane_point_2, plane_point_3])
@@ -244,7 +244,7 @@ class Canvas():
     def move_joints(self, joints_angles_list):
         joint_names = self.motion_proxy.getBodyNames("RArm")
         for target_angles in joints_angles_list:
-            print(target_angles[4])
+            # print(target_angles[4])
             self.motion_proxy.angleInterpolationWithSpeed(joint_names[:-1], target_angles, self.speed)
             #rospy.sleep(0.5)
 

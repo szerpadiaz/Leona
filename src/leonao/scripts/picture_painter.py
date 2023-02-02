@@ -34,33 +34,31 @@ class Picture_painter():
 
         self.face_path = self.load_face_path_from_pkl(filename_face)
         paths = [self.face_path['inner'], self.face_path['outer']]
-        paths = self.reduceClosePoints(paths)
-        for group in paths:
+        distances = [0.0005, 0.001]
+        for j, group in enumerate(paths):
            for i, path in enumerate(group):
-               scaled_path = []
-               for point in path:
-                   scaled_path.append([-point[0]* width_scale_factor - y_offset, point[1] * hight_scale_factor])
-               
-               self.canvas.draw_path(scaled_path)
+                scaled_path = []
+                for point in path:
+                    scaled_path.append([-point[0]* width_scale_factor - y_offset, point[1] * hight_scale_factor])
+                scaled_path = self.reduceClosePoints(scaled_path, distances[j])
+                self.canvas.draw_path(scaled_path)
 
         self.canvas.go_to_point([0,0])
 
-    def reduceClosePoints(self, paths):
-        distance = 0.005
-        print("Reducing close points, closer than " + distance + "%")
-        print("Size before: " + str(map(len, paths))
-        for group in paths:
-            for i, path in enumerate(group):
-                new_path = []
-                for j, point in enumerate(path):
-                    if j == 0:
-                        new_path.append(point)
-                    else:
-                        if self.distance(point, new_path[-1]) > distance:
-                            new_path.append(point)
-                group[i] = new_path
-        print("Size after: " + str(map(len, paths))
-        return paths
+    def reduceClosePoints(self, path, distance):
+        print("Reducing close points, closer than " + str(distance) + "m")
+        print("Number of points before: Inside: " + str(len(path))) #+ "points outside: " + str(sum(len(s) for s in paths[1])))
+        #for group in paths:
+        new_path = []
+        for j, point in enumerate(path):
+            if j == 0:
+                new_path.append(point)
+            else:
+                if self.distance(point, new_path[-1]) > distance:
+                    new_path.append(point)
+        
+        print("Number of points after: Inside: " + str(len(new_path))) #+ "points outside: " + str(sum(len(s) for s in paths[1])))
+        return new_path
     
     def distance(self, p1, p2):
         return math.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
