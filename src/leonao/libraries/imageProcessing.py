@@ -64,7 +64,7 @@ def get_bb_points_ratio43(mask, y_pad = (0.8, 0.3)):
     Ratio of BBox is ~ 4:3
     :param mask: output mask from sketcher
     :param y_pad: Paddings added to upper (idx 0) and lower (idx 1) edge of mask
-    :return: dictionary containing upper left and lower richt points coords: [x,y]
+    :return: dictionary containing upper left and lower right points coords: [x,y]
     """
     x2 = np.argmax((mask!=0).argmax(axis=0))
     y2 = np.argmax((mask!=0).argmax(axis=1))
@@ -166,6 +166,8 @@ class Handler(FileSystemEventHandler):
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 output_img, output_face_mask = sketcher.run(img)
 
+                top_left_point, bottom_right_point = get_bb_points_ratio43(output_face_mask, y_pad=(0.8, 0.3))
+                
                 ## Eroding face mask
                 # Calculate iterations based on image size
                 shape = output_img.shape
@@ -182,7 +184,12 @@ class Handler(FileSystemEventHandler):
                 # is output_face_mask already binary?
 
                 # Calculate new boundaries to crop to same ratio as drawing plane (4:3)
-                top_left_point, bottom_right_point = get_bb_points_ratio43(output_face_mask, y_pad=(0.8, 0.3))
+
+                # Show bounding box restricted by top_left_point and bottom_right_point
+                print(top_left_point, bottom_right_point)
+                cv2.rectangle(output_img, top_left_point, bottom_right_point, (0, 255, 0), 2)
+                cv2.imshow("output_img", output_img)
+                cv2.waitKey(0)
                 
                 # Generate inner_sketch and outer_sketch
                 inner_sketch = output_img * output_face_mask + (1-output_face_mask)*255
