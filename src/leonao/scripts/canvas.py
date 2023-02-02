@@ -106,8 +106,8 @@ class Canvas():
         x_offset = 0.0
 
         plane_point_1 = [0.247 - x_offset, -0.17, 0.05]
-        plane_point_2 = [0.24 - x_offset, -0.125, 0.23]
-        plane_point_3 = [0.245 - x_offset, 0.0, -0.02]
+        plane_point_2 = [0.242 - x_offset, -0.125, 0.23]
+        plane_point_3 = [0.248 - x_offset, 0.045, 0.14]
         plane_point_0 = plane_point_1    
         while not success:
             # Read 1st point/origin
