@@ -125,8 +125,8 @@ class Main_leonao_controller():
                 self.speak(MSG_AFTER_SUCCESS_PICTURE_TAKEN)
                 self.picture_painter.draw_face(paths_file)
                 self.speak(MSG_PAINTING_IS_DONE)
-                self.speak(MSG_THANKS)
-                self.speak(MSG_BEFORE_SIESTA)
+                # self.speak(MSG_THANKS)
+                self.speak(INTRO_MSG_2)
             else:
                 self.speak(MSG_PICTURE_TAKEN_FAILED)
 
