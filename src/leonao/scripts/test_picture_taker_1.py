@@ -3,35 +3,31 @@ import rospy
 import os
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 from naoqi import ALProxy
+from naoqi_bridge_msgs.msg import HeadTouch
 import pickle
 
 ################### Variables ###################
 USE_MEDIA_PIPE_DIRECT = False
-
 WATCHFOLDER_PATH = "/home/hrsa/leonao/src/leonao/watchfolder/"
-SKETCH_FACE_FILE = WATCHFOLDER_PATH + "sketch_face.jpg"
-SKETCH_FACE_PATHS_FILE = WATCHFOLDER_PATH + "sketcher_result.pkl"
 
+IMAGE_ROTATION = cv2.ROTATE_90_COUNTERCLOCKWISE
+# cv2.ROTATE_90_COUNTERCLOCKWISE
+# cv2.ROTATE_180
+# cv2.ROTATE_90_CLOCKWISE
 
 if USE_MEDIA_PIPE_DIRECT:
     from face_detector import FaceDetector
 
 class pictureTaker:
-    def __init__(self, local = False, useTestPicture = False):
+    def __init__(self, local = False):
         self.local = local
-        self.useTestPicture = useTestPicture
-        if useTestPicture:
-            self.IMAGE_ROTATION = False
-        else:
-            self.IMAGE_ROTATION = cv2.ROTATE_90_COUNTERCLOCKWISE
-            # cv2.ROTATE_90_COUNTERCLOCKWISE
-            # cv2.ROTATE_180
-            # cv2.ROTATE_90_CLOCKWISE
         self.minFaceSize = 0.33
         self.minBrightness = 100
         self.maxBrightness = 200
         self.minContrast = 80
+        self.front_button_pressed = False
         if local:
             self.camera = cv2.VideoCapture(0)
         if not self.local:
@@ -44,6 +40,7 @@ class pictureTaker:
             self.tts = ALProxy("ALTextToSpeech", self.robot_ip, 9559)
             self.bridge = CvBridge()
             self.image_sub = rospy.Subscriber("/nao_robot/camera/top/camera/image_raw", Image, self.newImageCallback)
+            self.head_sub = rospy.Subscriber('/tactile_touch', HeadTouch, self.head_touch_callback)
             print("Picuture Taker initialized")
 
     def takePicture(self, path):
@@ -52,12 +49,11 @@ class pictureTaker:
             cv2.imwrite(path, frame)
             return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         else:
-            if self.useTestPicture:
-                img = cv2.imread(WATCHFOLDER_PATH + path)
-            else:
-                img = self.bridge.imgmsg_to_cv2(self.currentImageFromStream, desired_encoding='bgr8')
-            if self.IMAGE_ROTATION:
-                img = cv2.rotate(img, self.IMAGE_ROTATION)
+            #img = self.bridge.imgmsg_to_cv2(self.currentImageFromStream, desired_encoding='bgr8')
+            img = cv2.imread(WATCHFOLDER_PATH + path)
+            if IMAGE_ROTATION:
+                pass
+                #img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
             with open(WATCHFOLDER_PATH + "face_detection_result.txt", "w") as f: # Reset the observation results
                 f.write("")
             with open(WATCHFOLDER_PATH + "sketcher_result.pkl", "w") as f: # Reset the observation results
@@ -132,29 +128,46 @@ class pictureTaker:
         else:
             print(text)
 
-    def take_stylish_picture(self):
-        self.speak("Taking a picture in 3, 2, 1. Smile!")
-        success = False
+    def main_loop(self):
+        #while not (self.front_button_pressed):
+        #    rospy.sleep(0.2)
+        raw_input("Press enter to take picture")
+        print("Taking a picture in 3, 2, 1. Smile!")
         img, conv_img = self.takePicture("detect_face.jpg")
         analyzePictureResponse, _ = self.analyzePicture(conv_img, showAnalysis= True)
         if analyzePictureResponse == "Success":
-            cv2.imwrite(SKETCH_FACE_FILE, img) 
+            cv2.imwrite(WATCHFOLDER_PATH+"sketch_face.jpg", img) 
             paths = "Still processing"
             print("looking for sketcher result")
             while paths == "Still processing":
-                f = open(SKETCH_FACE_PATHS_FILE, "rb")   
-                paths = pickle.load(f)
-                print(paths)
-                f.close()
-                if paths == "Still processing":
-                    rospy.sleep(1)
-                    print("Still procesing here")
-                    continue
-                print("Sketcher result:", paths)
-                success = True
-        return success    
+                with open(WATCHFOLDER_PATH + "sketcher_result.pkl", "rb") as f:    
+                    paths = pickle.load(f)
+                    print(paths)
+                    if paths == "Still processing":
+                        rospy.sleep(1)
+                        print("Still procesing here")
+                        continue
+                    print("Sketcher result:", paths)
+                    print("Executing drawing")
+                    #os.system("roslaunch leonao setup_example.launch")
+                    
+        else:
+            self.speak("Let's try again!")
 
     ################ Running Callbacks ################
 
+    def head_touch_callback(self, head_touch_event):
+        self.front_button_pressed = head_touch_event.button == HeadTouch.buttonFront and head_touch_event.state == HeadTouch.statePressed
+
     def newImageCallback(self, img_msg):
         self.currentImageFromStream = img_msg 
+
+if __name__ == '__main__':
+    rospy.init_node('test_picture_taker', anonymous=False)
+    pt = pictureTaker(local = False)
+    try:
+        while not rospy.is_shutdown():
+            pt.main_loop()
+            pass     
+    except rospy.ROSInterruptException:
+        pass

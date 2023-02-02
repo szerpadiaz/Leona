@@ -223,6 +223,6 @@ class Handler(FileSystemEventHandler):
 
 
 if __name__ == '__main__':
-    DIRECTORY_TO_WATCH = "/home/michael/Documents/HRS/leonao/src/leonao/watchfolder"
+    DIRECTORY_TO_WATCH = "/home/hrsa/leonao/src/leonao/watchfolder"
     w = Watcher(DIRECTORY_TO_WATCH)
     w.run()

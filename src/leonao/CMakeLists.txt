@@ -18,11 +18,6 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
     DIRECTORY srv
     FILES
-    MoveJoints.srv
-    GetCartesianCoordinates.srv
-    ConvertFromCameraBottomToTorso.srv
-    RestEndEffector.srv
-    Stiffness.srv
     Nao_RArm_chain_get_angles.srv
     Nao_RArm_chain_get_transform.srv
 )
@@ -82,10 +77,8 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
-  scripts/main_controller.py 
-  scripts/move_service.py
+  scripts/main_controller.py
   scripts/drawing_setup_example.py
-  scripts/inv_kinematic.py
   scripts/test_picture_taker.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
