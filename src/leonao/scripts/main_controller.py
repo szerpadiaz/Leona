@@ -95,9 +95,12 @@ class Main_leonao_controller():
         img = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding='bgr8')
         cv2.imshow("Current Image", img)
     
-    def speak(self, text):
+    def speak(self, text, nonBlocking = False):
         if type(text) == str:
-            self.tts.say(text)
+            if nonBlocking:
+                self.tts.post.say(text)
+            else:
+                self.tts.say(text)
         elif type(text) == list:
             self.speak(random.choice(text))
         else:
@@ -129,6 +132,7 @@ class Main_leonao_controller():
                 self.speak(INTRO_MSG_2)
             else:
                 self.speak(MSG_PICTURE_TAKEN_FAILED)
+                
 
 if __name__ == '__main__':
 
