@@ -66,12 +66,11 @@ def get_bb_points_ratio43(mask, y_pad = (0.8, 0.3)):
     :param y_pad: Paddings added to upper (idx 0) and lower (idx 1) edge of mask
     :return: dictionary containing upper left and lower right points coords: [x,y]
     """
-    x2 = np.argmax((mask!=0).argmax(axis=0))
-    y2 = np.argmax((mask!=0).argmax(axis=1))
-    x1 = (mask!=0).argmax(axis=0)
-    x1 = (x1!=0).argmax()
-    y1 = (mask!=0).argmax(axis=1)
-    y1 = (y1!=0).argmax()
+    idcs_y, idcs_x = np.where(mask!=0)
+    x1 = np.min(idcs_x)
+    x2 = np.max(idcs_x)
+    y1 = np.min(idcs_y)
+    y2 = np.max(idcs_y)
 
     x_mid = (x1 + x2)//2
     y_mid = (y1 + y2)//2
