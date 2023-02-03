@@ -153,7 +153,14 @@ class Handler(FileSystemEventHandler):
 
             if file[-15:] == "detect_face.jpg":
                 print("Detecting face")
+                time.sleep(1)
                 img = cv2.imread(file)
+                print(img)
+                if img is None:
+                    print("I slept")
+                    img = cv2.imread(file)
+                    if img is None:
+                        print("Tried to read the file twice but failed")
                 faceDetector = FaceDetector()
                 bbox, _ = faceDetector.detect_face(img)
                 print(bbox)
@@ -161,7 +168,15 @@ class Handler(FileSystemEventHandler):
                     f.write(str(bbox))
             elif file[-15:] == "sketch_face.jpg":
                 print("Sketching face")
+                time.sleep(1)
                 img = cv2.imread(file)
+                print(img)
+
+                if img is None:
+                    print("I slept")
+                    img = cv2.imread(file)
+                    if img is None:
+                        print("Tried to read the file twice but failed")
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 output_img, output_face_mask = sketcher.run(img)
 
