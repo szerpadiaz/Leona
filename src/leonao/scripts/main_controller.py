@@ -115,10 +115,9 @@ class Main_leonao_controller():
         robot_ip=str(os.getenv("NAO_IP"))
         robot_port=int(9559)
         self.tts = ALProxy("ALTextToSpeech", robot_ip, robot_port)
-        
+
         raw_input("Press enter to start")
         self.speak(INTRO_MSG_1)
-        self.speak(INTRO_MSG_2)
 
     def showImageCallback(self, img_msg):
         img = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding='bgr8')
