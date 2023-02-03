@@ -35,7 +35,7 @@ class pictureTaker:
         self.minBrightness = 100
         self.maxBrightness = 200
         self.minContrast = 70
-        if local:
+        if self.local:
             self.camera = cv2.VideoCapture(0)
         if not self.local:
             # Importing only if neccessary to easier run locally
@@ -82,7 +82,12 @@ class pictureTaker:
                 img = cv2.imread(WATCHFOLDER_PATH + path)
             elif self.imageSource == "RosStream":
                 img = self.bridge.imgmsg_to_cv2(self.currentImageFromStream, desired_encoding='bgr8')
-            elif self.imageSource == ""
+            elif self.imageSource == "ALProxy":
+                img = self.camProxy.getImageRemote(self.camId)
+                img = np.frombuffer(img[6], dtype=np.uint8).reshape((img[1], img[0], 3))
+                print("Image taken from ALProxy")
+                print("Image shape: " + str(img.shape))
+                print("Image type: " + str(type(img)))
             if self.IMAGE_ROTATION:
                 img = cv2.rotate(img, self.IMAGE_ROTATION)
             with open(WATCHFOLDER_PATH + "face_detection_result.txt", "w") as f: # Reset the observation results
