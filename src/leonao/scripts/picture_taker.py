@@ -96,7 +96,6 @@ class pictureTaker:
                 self.camProxy.unsubscribe(self.camId)
                 print("Image taken from ALProxy")
                 print("Image shape: " + str(img.shape))
-                print("Image type: " + str(type(img)))
             if self.IMAGE_ROTATION:
                 img = cv2.rotate(img, self.IMAGE_ROTATION)
             with open(WATCHFOLDER_PATH + "face_detection_result.txt", "w") as f: # Reset the observation results
@@ -171,7 +170,7 @@ class pictureTaker:
         if self.local:
             os.system(str("say " + text))
         else:
-            self.tts.say(text)
+            self.tts.say("\\vol=100\\" + text + "\\pau=500\\")
 
     def take_stylish_picture(self):
         self.speak("Taking a picture in 3, 2, 1. Smile!")
@@ -185,7 +184,6 @@ class pictureTaker:
             while paths == "Still processing":
                 f = open(SKETCH_FACE_PATHS_FILE, "rb")   
                 paths = pickle.load(f)
-                print(paths)
                 f.close()
                 if paths == "Still processing":
                     rospy.sleep(1)

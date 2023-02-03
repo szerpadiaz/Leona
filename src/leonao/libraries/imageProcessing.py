@@ -155,7 +155,6 @@ class Handler(FileSystemEventHandler):
                 print("Detecting face")
                 time.sleep(1)
                 img = cv2.imread(file)
-                print(img)
                 if img is None:
                     print("I slept")
                     img = cv2.imread(file)
@@ -170,7 +169,6 @@ class Handler(FileSystemEventHandler):
                 print("Sketching face")
                 time.sleep(1)
                 img = cv2.imread(file)
-                print(img)
 
                 if img is None:
                     print("I slept")

@@ -146,7 +146,7 @@ class Canvas():
 
         line_path.append([xn, yn, zn])
 
-        print("line_path: ", line_path)
+        #print("line_path: ", line_path)
 
         return line_path
 
@@ -158,29 +158,29 @@ class Canvas():
         # Compute the vectors from point 1 to point 2 and point 3
         vector_12 = np.array(plane_point_2 - plane_point_1)
         vector_13 = np.array(plane_point_3 - plane_point_1)
-        print("vector_12: ", vector_12)
-        print("vector_13", vector_13)
+        #print("vector_12: ", vector_12)
+        #print("vector_13", vector_13)
         # Compute the plane normal from with the cross product
         self.plane_normal = np.cross(vector_12, vector_13)
         self.plane_normal = self.plane_normal / np.linalg.norm(self.plane_normal)
-        print("self.plane_normal: ", self.plane_normal)
+        #print("self.plane_normal: ", self.plane_normal)
         # Solve for one point to get offset of the equation
         # self.plane_offset = -plane_point_1[0]*self.plane_normal[0] - plane_point_1[1]*self.plane_normal[1] - plane_point_1[2]*self.plane_normal[2]
         # print("self.plane_offset: ", self.plane_offset)
         v1 = vector_12 / np.linalg.norm(vector_12) #- np.dot(vector_12, self.plane_normal) * self.plane_normal
         v2 = np.cross(v1, self.plane_normal)
         v2 = v2 / np.linalg.norm(v2)
-        print("normal: ", self.plane_normal)
-        print("v2: ", v2)
-        print("v1: ", v1)
+        #print("normal: ", self.plane_normal)
+        #print("v2: ", v2)
+        #print("v1: ", v1)
 
         R = np.column_stack((self.plane_normal, v2, v1))
-        print("R: ", R)
-        print("plane_point_1", plane_point_1)
+        #print("R: ", R)
+        #print("plane_point_1", plane_point_1)
 
         #euler_angles = np.array(np.rad2deg(np.array(np.matrix(R).flat)), dtype=np.float32)
         euler_angles = tf.transformations.euler_from_matrix(R, 'rxyz')
-        print("euler_angles", np.degrees(euler_angles))
+        #print("euler_angles", np.degrees(euler_angles))
 
         T_bs = almath.Transform()
         T_bs.r1_c1 = R[0,0]
@@ -305,7 +305,7 @@ class Canvas():
 
         line_path.append([yn,zn])
 
-        print("line_path: ", line_path)
+        #print("line_path: ", line_path)
 
         return line_path
 
