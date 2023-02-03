@@ -4,6 +4,7 @@ import os
 import cv2
 import numpy as np
 from naoqi import ALProxy
+import vision_definitions as vd
 import pickle
 
 ################### Variables ###################
@@ -30,7 +31,7 @@ class pictureTaker:
             # cv2.ROTATE_90_CLOCKWISE
         self.minFaceSize = 0.33
         self.minBrightness = 100
-        self.maxBrightness = 200 
+        self.maxBrightness = 200
         self.minContrast = 70
         if local:
             self.camera = cv2.VideoCapture(0)
@@ -43,6 +44,28 @@ class pictureTaker:
             self.robot_ip=str(os.getenv("NAO_IP"))
             self.robot_port=int(9559)
             self.tts = ALProxy("ALTextToSpeech", self.robot_ip, 9559)
+
+            # Video stream
+            self.camProxy = ALProxy("ALVideoDevice", self.robot_ip, 9559)
+            ## Possible values for auto exposure algorithm
+            # 0: Average scene Brightness
+            # 1: Weighted average scene Brightness
+            # 2: Adaptive weighted auto exposure for hightlights
+            # 3: Adaptive weighted auto exposure for lowlights
+            self.camProxy.setParam(22, 2) # not checked yet
+
+            # Might be able to change resolution as well
+            # // kVGA (640x480) or k4VGA (1280x960, only with the HD camera).
+            # // (Definitions are available in alvisiondefinitions.h)
+            self.camProxy.setParam(14, "k4VGA") # not checked yet
+
+            # Maybe also sharpness helps:
+            # Set sharpness to 2
+            self.camProxy.setParam(24, 2) # not checked yet
+            resolution = vd.k4VGA
+            colorSpace = vd.kBGRColorSpace
+            fps = 5
+            self.camId = self.camProxy.subscribe("top_cam", resolution, colorSpace, fps)
             self.image_sub = rospy.Subscriber("/nao_robot/camera/top/camera/image_raw", Image, self.newImageCallback)
             print("Picuture Taker initialized")
 
@@ -152,6 +175,7 @@ class pictureTaker:
                     continue
                 print("Sketcher result:", paths)
                 success = True
+                self.camProxy.unsubscribe(self.camId) # TODO: Check if unsubscribe here is the right place
         return success    
 
     ################ Running Callbacks ################
