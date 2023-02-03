@@ -44,9 +44,9 @@ TAKING_PICTURE_INSTRUCTIONS_1 = [
 ]
 TAKING_PICTURE_INSTRUCTIONS_2 = [
 "Please stand in front of me and hold still for the picture.",
-"Get ready for your close-up! Stand in front of me and hold still."
-"Just stand in front of me and stay still for the picture."
-"Position yourself in front of me and hold still. I don't want to capture any movement."
+"Get ready for your close-up! Stand in front of me and hold still.",
+"Just stand in front of me and stay still for the picture.",
+"Position yourself in front of me and hold still. I don't want to capture any movement.",
 "Take your place in front of me and hold still. I want to capture your true beauty.",
 "Hold still, my friend! I don't want to capture your nerves, just your beauty."
 ]
@@ -92,7 +92,7 @@ class Main_leonao_controller():
         self.idle_entered = False
         self.taking_picture_entered = False
         self.drawing_entered = False
-        self.picture_taker =  pictureTaker(useTestPicture = False)
+        self.picture_taker =  pictureTaker(imageSource = "ALProxy") # imageSource "ALProxy", "TestPicutre", "Local" or "RosStream"
         self.picture_painter = Picture_painter()
 
         self.paths_file = SKETCH_FACE_PATHS_FILE
@@ -115,6 +115,8 @@ class Main_leonao_controller():
         robot_ip=str(os.getenv("NAO_IP"))
         robot_port=int(9559)
         self.tts = ALProxy("ALTextToSpeech", robot_ip, robot_port)
+        
+        raw_input("Press enter to start")
         self.speak(INTRO_MSG_1)
         self.speak(INTRO_MSG_2)
 
@@ -123,12 +125,15 @@ class Main_leonao_controller():
         img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
         cv2.imshow("Current Image", img)
         cv2.waitKey(1)
+        
     
     def speak(self, text, nonBlocking = False):
         if type(text) == str:
             if nonBlocking:
+                print(text)
                 self.tts.post.say("\\vol=100\\" + text + "\\pau=500\\")
             else:
+                print(text)
                 self.tts.say("\\vol=100\\" + text + "\\pau=500\\")
         elif type(text) == list:
             self.speak(random.choice(text))
