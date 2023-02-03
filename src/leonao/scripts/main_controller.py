@@ -154,31 +154,31 @@ class Main_leonao_controller():
     #    self.check_event()
 
     def check_event(self):
-        handled = False
+        valid_event = False
         if self.state == State.IDLE:
             if self.event == Event.TAKE_PICTURE:
                 self.state = State.TAKING_PICTURE
                 self.idle_entered = False
-                hanlded = True
+                valid_event = True
         elif self.state == State.TAKING_PICTURE:
             if self.event == Event.PICTURE_SUCCESS:
                 self.state = State.PAINTING
                 self.taking_picture_entered = False
-                hanlded = True
+                valid_event = True
             elif self.event == Event.PICTURE_FAILED:
                 self.speak(MSG_PICTURE_TAKEN_FAILED)
                 self.state = State.IDLE
                 self.taking_picture_entered = False
-                hanlded = True
+                valid_event = True
         elif self.state == State.PAINTING:
             if self.event == Event.PAINTING_DONE:
                 self.speak(MSG_PAINTING_IS_DONE)
                 self.speak(MSG_THANKS)
                 self.state = State.IDLE
                 self.drawing_entered = False
-                hanlded = True
+                valid_event = True
         
-        if(hanlded == False):
+        if(valid_event == False):
             print("Invalid (state, event): ", self.state, self.event)
 
     def check_state(self):
