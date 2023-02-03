@@ -31,10 +31,10 @@ class pictureTaker:
             # cv2.ROTATE_90_COUNTERCLOCKWISE
             # cv2.ROTATE_180
             # cv2.ROTATE_90_CLOCKWISE
-        self.minFaceSize = 0.33
-        self.minBrightness = 100
+        self.minFaceSize = 0.1
+        self.minBrightness = 50
         self.maxBrightness = 200
-        self.minContrast = 70
+        self.minContrast = 30
         if self.local:
             self.camera = cv2.VideoCapture(0)
         if not self.local:
@@ -49,25 +49,8 @@ class pictureTaker:
 
             # Video stream
             self.camProxy = ALProxy("ALVideoDevice", self.robot_ip, 9559)
-            ## Possible values for auto exposure algorithm
-            # 0: Average scene Brightness
-            # 1: Weighted average scene Brightness
-            # 2: Adaptive weighted auto exposure for hightlights
-            # 3: Adaptive weighted auto exposure for lowlights
-            self.camProxy.setParam(22, 2) # not checked yet
 
-            # Might be able to change resolution as well
-            # // kVGA (640x480) or k4VGA (1280x960, only with the HD camera).
-            # // (Definitions are available in alvisiondefinitions.h)
-            self.camProxy.setParam(14, "k4VGA") # not checked yet
 
-            # Maybe also sharpness helps:
-            # Set sharpness to 2
-            self.camProxy.setParam(24, 2) # not checked yet
-            resolution = vd.k4VGA
-            colorSpace = vd.kBGRColorSpace
-            fps = 10
-            self.camId = self.camProxy.subscribe("top_cam", resolution, colorSpace, fps)
             if imageSource == "RosStream":
                 self.image_sub = rospy.Subscriber("/nao_robot/camera/top/camera/image_raw", Image, self.newImageCallback)
             print("Picuture Taker initialized")
@@ -83,8 +66,34 @@ class pictureTaker:
             elif self.imageSource == "RosStream":
                 img = self.bridge.imgmsg_to_cv2(self.currentImageFromStream, desired_encoding='bgr8')
             elif self.imageSource == "ALProxy":
+                resolution = vd.k4VGA
+                colorSpace = vd.kBGRColorSpace
+                fps = 10
+                self.camId = self.camProxy.subscribe("top_cam", resolution, colorSpace, fps)
+                ## Possible values for auto exposure algorithm
+                # 0: Average scene Brightness
+                # 1: Weighted average scene Brightness
+                # 2: Adaptive weighted auto exposure for hightlights
+                # 3: Adaptive weighted auto exposure for lowlights
+                self.camProxy.setCameraParameter(self.camId, vd.kCameraHFlipID, 0) # not checked yet
+                self.camProxy.setCameraParameter(self.camId, vd.kCameraAutoExpositionID, 1) # not checked yet
+                self.camProxy.setCameraParameter(self.camId, vd.kCameraExposureAlgorithmID, 2) # not checked yet
+                self.camProxy.setCameraParameter(self.camId, vd.kCameraBrightnessID, 55) # not checked yet
+                self.camProxy.setCameraParameter(self.camId, vd.kCameraSharpnessID, 0) # not checked yet
+                print(self.camProxy.getCameraParameter(self.camId, vd.kCameraBrightnessID))
+                #self.camProxy.setResolution(self.camId, vd.kVGA)
+
+                # Might be able to change resolution as well
+                # // kVGA (640x480) or k4VGA (1280x960, only with the HD camera).
+                # // (Definitions are available in alvisiondefinitions.h)
+                #self.camProxy.setParam(14, vd.k4VGA) # not checked yet
+
+                # Maybe also sharpness helps:
+                # Set sharpness to 2
+                #self.camProxy.setParameter(int(self.camId[-1]), vd.kCameraSharpnessID, 7) # not checked yet
                 img = self.camProxy.getImageRemote(self.camId)
                 img = np.frombuffer(img[6], dtype=np.uint8).reshape((img[1], img[0], 3))
+                self.camProxy.unsubscribe(self.camId)
                 print("Image taken from ALProxy")
                 print("Image shape: " + str(img.shape))
                 print("Image type: " + str(type(img)))
