@@ -6,6 +6,7 @@ import numpy as np
 from naoqi import ALProxy
 import vision_definitions as vd
 import pickle
+from std_msgs.msg import Bool, Empty
 
 ################### Variables ###################
 USE_MEDIA_PIPE_DIRECT = False
@@ -55,12 +56,12 @@ class pictureTaker:
                 self.image_sub = rospy.Subscriber("/nao_robot/camera/top/camera/image_raw", Image, self.newImageCallback)
             print("Picuture Taker initialized")
 
-        #self.take_picture_sub = rospy.Subscriber('/take_picture', None, self.take_picture_callback, queue_size=1)
-        #self.picture_taken_pub = rospy.Publisher('picture_taken', Bool, queue_size=1)
+        self.take_picture_sub = rospy.Subscriber('/take_picture', Empty, self.take_picture_callback, queue_size=1)
+        self.picture_taken_pub = rospy.Publisher('picture_taken', Bool, queue_size=1)
     
-    #def take_picture_callback(self):
-    #    success = self.take_stylish_picture()
-    #    self.picture_taken_pub.publish(success)
+    def take_picture_callback(self, data):
+        success = self.take_stylish_picture()
+        self.picture_taken_pub.publish(success)
 
     def takePicture(self, path):
         if self.local:
@@ -196,7 +197,7 @@ class pictureTaker:
                     rospy.sleep(1)
                     print("Still procesing here")
                     continue
-                print("Sketcher result:", paths)
+                #print("Sketcher result:", paths)
                 success = True
                 self.camProxy.unsubscribe(self.camId) # TODO: Check if unsubscribe here is the right place
         return success    
@@ -208,11 +209,11 @@ class pictureTaker:
 
 
 
-#if __name__ == '__main__':
-#    rospy.init_node('picture_taker', anonymous=True)
-#    try:
-#        picture_taker =  pictureTaker(useTestPicture = False)
-#        rospy.spin()
-#
-#    except rospy.ROSInterruptException:
-#        print("picture_taker: FAILED")
+if __name__ == '__main__':
+    rospy.init_node('picture_taker', anonymous=True)
+    try:
+        picture_taker =  pictureTaker(imageSource = "ALProxy")
+        rospy.spin()
+
+    except rospy.ROSInterruptException:
+        print("picture_taker: FAILED")

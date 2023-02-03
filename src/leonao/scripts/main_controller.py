@@ -10,11 +10,14 @@ from naoqi import ALProxy
 from cv_bridge import CvBridge
 
 import random
+import os
 
 from enum import IntEnum
-from std_msgs.msg import String, Bool
-from picture_taker import *
-from picture_painter import *
+from std_msgs.msg import String, Bool, Empty
+
+WATCHFOLDER_PATH = "/home/hrsa/leonao/src/leonao/watchfolder/"
+SKETCH_FACE_FILE = WATCHFOLDER_PATH + "sketch_face.jpg"
+SKETCH_FACE_PATHS_FILE = WATCHFOLDER_PATH + "sketcher_result.pkl"
 
 MSG_THANKS = "Thank you for visiting my studio, come back soon!"
 MSG_BEFORE_SIESTA = "I am going to take a nap now. See you later!"
@@ -92,20 +95,18 @@ class Main_leonao_controller():
         self.idle_entered = False
         self.taking_picture_entered = False
         self.drawing_entered = False
-        self.picture_taker =  pictureTaker(imageSource = "ALProxy") # imageSource "ALProxy", "TestPicutre", "Local" or "RosStream"
-        self.picture_painter = Picture_painter()
 
         self.paths_file = SKETCH_FACE_PATHS_FILE
         #self.paths_file = WATCHFOLDER_PATH + "sergio_sketcher_result.pkl"
 
         # Events callbacks
         self.head_sub = rospy.Subscriber('/tactile_touch', HeadTouch, self.head_touch_callback) #, queue_size=1 ?
-        #self.picture_taken_sub = rospy.Subscriber('/picture_taken', Bool, self.picture_taker_event_callback, queue_size=1)
-        #self.painting_done_sub = rospy.Subscriber('/painting_done', None, self.picture_painter_event_callback, queue_size=1)
+        self.picture_taken_sub = rospy.Subscriber('/picture_taken', Bool, self.picture_taker_event_callback, queue_size=1)
+        self.painting_done_sub = rospy.Subscriber('/painting_done', Empty, self.picture_painter_event_callback, queue_size=1)
 
         # Output signals callback
-        #self.take_picture_pub = rospy.Publisher('take_picture', None, queue_size=1)
-        #self.draw_path_pub = rospy.Publisher('draw_path', String, queue_size=1)
+        self.take_picture_pub = rospy.Publisher('take_picture', Empty, queue_size=1)
+        self.draw_path_pub = rospy.Publisher('draw_path', String, queue_size=1)
 
         # Camera visualization
         self.bridge = CvBridge()
@@ -144,11 +145,12 @@ class Main_leonao_controller():
             self.event = Event.TAKE_PICTURE
             self.check_event()
 
-    def picture_taker_event_callback(self, success):
+    def picture_taker_event_callback(self, data):
+        success = data.data
         self.event = Event.PICTURE_SUCCESS if success else Event.PICTURE_FAILED
         self.check_event()
 
-    def picture_painter_event_callback(self):
+    def picture_painter_event_callback(self, data):
         self.event = Event.PAINTING_DONE
         self.check_event()
 
@@ -210,20 +212,14 @@ class Main_leonao_controller():
     def take_stylish_picture(self):
         self.speak(TAKING_PICTURE_INSTRUCTIONS_1)
         self.speak(TAKING_PICTURE_INSTRUCTIONS_2, nonBlocking=True)
+        self.take_picture_pub.publish()
 
-        #self.take_picture_pub.publish(None)
-        success = self.picture_taker.take_stylish_picture()
-
-        self.picture_taker_event_callback(success)
     
     def draw_face(self):
         self.speak(MSG_BEFORE_PAINTING_START)
         raw_input("press enter to draw")
 
-        #self.draw_path_pub(self.paths_file)
-        self.picture_painter.draw_face(self.paths_file)
-
-        self.picture_painter_event_callback()
+        self.draw_path_pub.publish(self.paths_file)
                 
 
 if __name__ == '__main__':

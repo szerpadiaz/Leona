@@ -2,7 +2,7 @@
 ## Picture painter class, it should use the canvas to provide painting services to main-controller
 
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import String, Empty
 from canvas import * 
 
 WATCHFOLDER_PATH = "/home/hrsa/leonao/src/leonao/watchfolder/"
@@ -12,13 +12,14 @@ class Picture_painter():
     def __init__(self):
 
         self.canvas = Canvas()
-        #self.draw_path_sub = rospy.Subscriber('/draw_path', String, self.draw_path_callback, queue_size=1)
-        #self.painting_done_pub = rospy.Publisher('painting_done', None, queue_size=1)
-    
-    #def draw_path_callback(self, data):
-    #    filename_face = data #?
-    #    self.draw_face(filename_face)
-    #    self.painting_done_pub.publish(None)
+
+        self.draw_path_sub = rospy.Subscriber('/draw_path', String, self.draw_path_callback, queue_size=1)
+        self.painting_done_pub = rospy.Publisher('painting_done', Empty, queue_size=1)
+
+    def draw_path_callback(self, data):
+        filename_face = data.data
+        self.draw_face(filename_face)
+        self.painting_done_pub.publish()
 
     def load_face_path_from_pkl(self, filename):
         #abs_path = os.path.dirname(os.path.abspath(__file__)) + "/../watchfolder/" + filename
@@ -77,11 +78,11 @@ class Picture_painter():
         return math.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
     
 
-#if __name__ == '__main__':
-#    rospy.init_node('picture_painter', anonymous=True)
-#    try:
-#        picture_painter = Picture_painter()
-#        rospy.spin()
-#
-#    except rospy.ROSInterruptException:
-#        print("picture_painter: FAILED")
+if __name__ == '__main__':
+    rospy.init_node('picture_painter', anonymous=True)
+    try:
+        picture_painter = Picture_painter()
+        rospy.spin()
+
+    except rospy.ROSInterruptException:
+        print("picture_painter: FAILED")
