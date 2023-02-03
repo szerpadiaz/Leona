@@ -46,6 +46,13 @@ class pictureTaker:
             self.image_sub = rospy.Subscriber("/nao_robot/camera/top/camera/image_raw", Image, self.newImageCallback)
             print("Picuture Taker initialized")
 
+        #self.take_picture_sub = rospy.Subscriber('/take_picture', None, self.take_picture_callback, queue_size=1)
+        #self.picture_taken_pub = rospy.Publisher('picture_taken', Bool, queue_size=1)
+    
+    #def take_picture_callback(self):
+    #    success = self.take_stylish_picture()
+    #    self.picture_taken_pub.publish(success)
+
     def takePicture(self, path):
         if self.local:
             _, frame = self.camera.read()
@@ -158,3 +165,14 @@ class pictureTaker:
 
     def newImageCallback(self, img_msg):
         self.currentImageFromStream = img_msg 
+
+
+
+#if __name__ == '__main__':
+#    rospy.init_node('picture_taker', anonymous=True)
+#    try:
+#        picture_taker =  pictureTaker(useTestPicture = False)
+#        rospy.spin()
+#
+#    except rospy.ROSInterruptException:
+#        print("picture_taker: FAILED")

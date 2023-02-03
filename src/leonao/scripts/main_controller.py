@@ -12,7 +12,7 @@ from cv_bridge import CvBridge
 import random
 
 from enum import IntEnum
-from std_msgs.msg import String, Bool, String
+from std_msgs.msg import String, Bool
 from picture_taker import *
 from picture_painter import *
 
