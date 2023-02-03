@@ -19,10 +19,12 @@ if USE_MEDIA_PIPE_DIRECT:
     from face_detector import FaceDetector
 
 class pictureTaker:
-    def __init__(self, local = False, useTestPicture = False):
-        self.local = local
-        self.useTestPicture = useTestPicture
-        if useTestPicture:
+    def __init__(self, imageSource = "ALProxy"): # imageSource "ALProxy", "TestPicutre", "Local" or "RosStream"
+        self.local = False
+        if imageSource == "Local":
+            self.local = True
+        self.imageSource = imageSource
+        if imageSource == "TestPicture":
             self.IMAGE_ROTATION = False
         else:
             self.IMAGE_ROTATION = cv2.ROTATE_90_COUNTERCLOCKWISE
@@ -64,9 +66,10 @@ class pictureTaker:
             self.camProxy.setParam(24, 2) # not checked yet
             resolution = vd.k4VGA
             colorSpace = vd.kBGRColorSpace
-            fps = 5
+            fps = 10
             self.camId = self.camProxy.subscribe("top_cam", resolution, colorSpace, fps)
-            self.image_sub = rospy.Subscriber("/nao_robot/camera/top/camera/image_raw", Image, self.newImageCallback)
+            if imageSource == "RosStream":
+                self.image_sub = rospy.Subscriber("/nao_robot/camera/top/camera/image_raw", Image, self.newImageCallback)
             print("Picuture Taker initialized")
 
     def takePicture(self, path):
@@ -75,10 +78,11 @@ class pictureTaker:
             cv2.imwrite(path, frame)
             return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         else:
-            if self.useTestPicture:
+            if self.imageSource == "TestPicutre":
                 img = cv2.imread(WATCHFOLDER_PATH + path)
-            else:
+            elif self.imageSource == "RosStream":
                 img = self.bridge.imgmsg_to_cv2(self.currentImageFromStream, desired_encoding='bgr8')
+            elif self.imageSource == ""
             if self.IMAGE_ROTATION:
                 img = cv2.rotate(img, self.IMAGE_ROTATION)
             with open(WATCHFOLDER_PATH + "face_detection_result.txt", "w") as f: # Reset the observation results
