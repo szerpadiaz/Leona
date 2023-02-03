@@ -36,7 +36,7 @@ class Picture_painter():
 
         hight_scale_factor = 0.20
         width_scale_factor = 0.15
-        y_offset = 0.01
+        y_offset = 0.00
 
         self.canvas.go_to_point([0,0])
 
