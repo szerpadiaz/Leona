@@ -12,6 +12,7 @@ from cv_bridge import CvBridge
 import random
 
 from enum import IntEnum
+from std_msgs.msg import String, Bool, String
 from picture_taker import *
 from picture_painter import *
 
@@ -98,7 +99,13 @@ class Main_leonao_controller():
         #self.paths_file = WATCHFOLDER_PATH + "sergio_sketcher_result.pkl"
 
         # Events callbacks
-        self.head_sub = rospy.Subscriber('/tactile_touch', HeadTouch, self.head_touch_callback)
+        self.head_sub = rospy.Subscriber('/tactile_touch', HeadTouch, self.head_touch_callback) #, queue_size=1 ?
+        #self.picture_taken_sub = rospy.Subscriber('/picture_taken', Bool, self.picture_taker_event_callback, queue_size=1)
+        #self.painting_done_sub = rospy.Subscriber('/painting_done', None, self.picture_painter_event_callback, queue_size=1)
+
+        # Output signals callback
+        #self.take_picture_pub = rospy.Publisher('take_picture', None, queue_size=1)
+        #self.draw_path_pub = rospy.Publisher('draw_path', String, queue_size=1)
 
         # Camera visualization
         self.bridge = CvBridge()
@@ -133,11 +140,11 @@ class Main_leonao_controller():
             self.event = Event.TAKE_PICTURE
             self.check_event()
 
-    def picture_event_callback(self, success):
+    def picture_taker_event_callback(self, success):
         self.event = Event.PICTURE_SUCCESS if success else Event.PICTURE_FAILED
         self.check_event()
 
-    def painting_event_callback(self):
+    def picture_painter_event_callback(self):
         self.event = Event.PAINTING_DONE
         self.check_event()
 
@@ -199,15 +206,20 @@ class Main_leonao_controller():
     def take_stylish_picture(self):
         self.speak(TAKING_PICTURE_INSTRUCTIONS_1)
         self.speak(TAKING_PICTURE_INSTRUCTIONS_2, nonBlocking=True)
+
+        #self.take_picture_pub.publish(None)
         success = self.picture_taker.take_stylish_picture()
-        #success = True
-        self.picture_event_callback(success)
+
+        self.picture_taker_event_callback(success)
     
     def draw_face(self):
         self.speak(MSG_BEFORE_PAINTING_START)
         raw_input("press enter to draw")
+
+        #self.draw_path_pub(self.paths_file)
         self.picture_painter.draw_face(self.paths_file)
-        self.painting_event_callback()
+
+        self.picture_painter_event_callback()
                 
 
 if __name__ == '__main__':
