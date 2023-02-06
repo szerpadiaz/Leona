@@ -117,8 +117,20 @@ class Main_leonao_controller():
         robot_port=int(9559)
         self.tts = ALProxy("ALTextToSpeech", robot_ip, robot_port)
 
+        self.head_proxy = ALProxy("ALMotion", robot_ip, robot_port)
+        self.enable_head_stiffness()
+        rospy.sleep(2.0)        
+        self.move_head("up")
         raw_input("Press enter to start")
         self.speak(INTRO_MSG_1)
+
+
+    def disable_head_stiffness(self):
+        self.head_proxy.stiffnessInterpolation('Head', 0.0, 1.0)
+
+    def enable_head_stiffness(self):
+        self.head_proxy.stiffnessInterpolation('Head', 1.0, 1.0)
+
 
     def showImageCallback(self, img_msg):
         img = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding='bgr8')
@@ -159,6 +171,22 @@ class Main_leonao_controller():
     #    self.event = Event(event)
     #    self.check_event()
 
+    def move_head(self, target):
+        # Moves head to target ("up" or "down")
+
+        up_position = [-1.9, 0]
+        down_position = [-0.174533, 0]
+        speed = 0.05
+
+        # Move head
+        if target == "up":
+            position = up_position
+        elif target == "down":
+            position = down_position    
+        self.head_proxy.post.angleInterpolationWithSpeed(['HeadYaw', 'HeadPitch'], position, speed)
+            
+
+
     def check_event(self):
         valid_event = False
         if self.state == State.IDLE:
@@ -176,13 +204,16 @@ class Main_leonao_controller():
                 self.state = State.IDLE
                 self.taking_picture_entered = False
                 valid_event = True
+                print("Waiting for the wake-up signal")
         elif self.state == State.PAINTING:
             if self.event == Event.PAINTING_DONE:
+                self.move_head("up")
                 self.speak(MSG_PAINTING_IS_DONE)
                 self.speak(MSG_THANKS)
                 self.state = State.IDLE
                 self.drawing_entered = False
                 valid_event = True
+                print("Waiting for the wake-up signal")
         
         if(valid_event == False):
             print("Invalid (state, event): ", self.state, self.event)
@@ -193,19 +224,24 @@ class Main_leonao_controller():
                 self.idle_entered = True
                 self.speak(INTRO_MSG_2)
             else:
-                print("Waiting for the wake-up signal")
+                #print("Waiting for the wake-up signal")
+                pass
         elif self.state == State.TAKING_PICTURE:
             if self.taking_picture_entered == False:
                 self.taking_picture_entered = True
+                self.move_head("up")
                 self.take_stylish_picture()
             else:
-                print("Waiting for picture")
+                #print("Waiting for picture")
+                pass
         elif self.state == State.PAINTING:
             if self.drawing_entered == False:
                 self.drawing_entered = True
+                self.move_head("down")
                 self.draw_face()
             else:
-                print("Waiting for drawing")
+                #print("Waiting for drawing")
+                pass
         else:
             print("Invalid state! ", self.state)
 
@@ -213,6 +249,7 @@ class Main_leonao_controller():
         self.speak(TAKING_PICTURE_INSTRUCTIONS_1)
         self.speak(TAKING_PICTURE_INSTRUCTIONS_2, nonBlocking=True)
         self.take_picture_pub.publish()
+        print("Waiting for picture")
 
     
     def draw_face(self):
@@ -220,6 +257,7 @@ class Main_leonao_controller():
         raw_input("press enter to draw")
 
         self.draw_path_pub.publish(self.paths_file)
+        print("Waiting for drawing")
                 
 
 if __name__ == '__main__':
