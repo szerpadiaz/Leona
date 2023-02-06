@@ -60,6 +60,7 @@ class pictureTaker:
         self.picture_taken_pub = rospy.Publisher('picture_taken', Bool, queue_size=1)
     
     def take_picture_callback(self, data):
+        # print("take_picture_callback")
         success = self.take_stylish_picture()
         self.picture_taken_pub.publish(success)
 

@@ -53,6 +53,8 @@ TAKING_PICTURE_INSTRUCTIONS_2 = [
 "Take your place in front of me and hold still. I want to capture your true beauty.",
 "Hold still, my friend! I don't want to capture your nerves, just your beauty."
 ]
+MSG_ASK_FOR_CONFIRMATION_TO_START_PAINTING = " Your sketch is ready. Please press the front \
+    button to start painting or the back button to abort it"
 MSG_BEFORE_PAINTING_START = [
 "Wonderful! Now relax and let me paint your portrait.",
 "Marvelous! I'll make sure you look even more stunning in the portrait.",
@@ -77,15 +79,17 @@ MSG_PAINTING_IS_DONE = [
 
 
 class Event(IntEnum):
-    TAKE_PICTURE = 1
-    PICTURE_SUCCESS = 2
-    PICTURE_FAILED = 3
-    PAINTING_DONE = 4
+    FRONT_BUTTON = 1
+    REAR_BUTTON = 2
+    PICTURE_SUCCESS = 3
+    PICTURE_FAILED = 4
+    PAINTING_DONE = 5
 
 class State(IntEnum):
     IDLE = 1
     TAKING_PICTURE = 2
-    PAINTING = 3
+    WAIT_FOR_PAINTING_CONFIRMATION = 3
+    PAINTING = 4
 
 class Main_leonao_controller():
     def __init__(self):
@@ -121,7 +125,7 @@ class Main_leonao_controller():
         self.enable_head_stiffness()
         rospy.sleep(2.0)        
         self.move_head("up")
-        raw_input("Press enter to start")
+        #raw_input("Press enter to start")
         self.speak(INTRO_MSG_1)
 
 
@@ -154,15 +158,23 @@ class Main_leonao_controller():
         
     def head_touch_callback(self, head_touch_event):
         if (head_touch_event.button == HeadTouch.buttonFront and head_touch_event.state == HeadTouch.statePressed):
-            self.event = Event.TAKE_PICTURE
+            self.event = Event.FRONT_BUTTON
+            # print("self.event = Event.FRONT_BUTTON")
             self.check_event()
+        elif (head_touch_event.button == HeadTouch.buttonRear and head_touch_event.state == HeadTouch.statePressed):
+            self.event = Event.REAR_BUTTON
+            self.check_event()
+        # else:
+        #     print("another touch event")
 
     def picture_taker_event_callback(self, data):
+        # print("picture_taker_event_callback")
         success = data.data
         self.event = Event.PICTURE_SUCCESS if success else Event.PICTURE_FAILED
         self.check_event()
 
     def picture_painter_event_callback(self, data):
+        # print("picture_painter_event_callback")
         self.event = Event.PAINTING_DONE
         self.check_event()
 
@@ -175,7 +187,7 @@ class Main_leonao_controller():
         # Moves head to target ("up" or "down")
 
         up_position = [-1.9, 0]
-        down_position = [-0.174533, 0]
+        down_position = [-0.19, 0]
         speed = 0.05
 
         # Move head
@@ -190,21 +202,32 @@ class Main_leonao_controller():
     def check_event(self):
         valid_event = False
         if self.state == State.IDLE:
-            if self.event == Event.TAKE_PICTURE:
+            if self.event == Event.FRONT_BUTTON:
                 self.state = State.TAKING_PICTURE
                 self.idle_entered = False
                 valid_event = True
         elif self.state == State.TAKING_PICTURE:
             if self.event == Event.PICTURE_SUCCESS:
-                self.state = State.PAINTING
+                self.state = State.WAIT_FOR_PAINTING_CONFIRMATION
                 self.taking_picture_entered = False
                 valid_event = True
+                self.speak(MSG_ASK_FOR_CONFIRMATION_TO_START_PAINTING)
             elif self.event == Event.PICTURE_FAILED:
                 self.speak(MSG_PICTURE_TAKEN_FAILED)
                 self.state = State.IDLE
                 self.taking_picture_entered = False
                 valid_event = True
                 print("Waiting for the wake-up signal")
+        elif self.state == State.WAIT_FOR_PAINTING_CONFIRMATION:
+           if self.event == Event.FRONT_BUTTON:
+               self.state = State.PAINTING
+               valid_event = True
+           elif self.event == Event.REAR_BUTTON:
+               self.state = State.IDLE
+               valid_event = True
+               print("Aborting picture and going back to idle")
+               self.speak("Aborting")
+               print("Waiting for the wake-up signal")
         elif self.state == State.PAINTING:
             if self.event == Event.PAINTING_DONE:
                 self.move_head("up")
@@ -214,7 +237,7 @@ class Main_leonao_controller():
                 self.drawing_entered = False
                 valid_event = True
                 print("Waiting for the wake-up signal")
-        
+        ##self.event = None
         if(valid_event == False):
             print("Invalid (state, event): ", self.state, self.event)
 
@@ -224,24 +247,23 @@ class Main_leonao_controller():
                 self.idle_entered = True
                 self.speak(INTRO_MSG_2)
             else:
-                #print("Waiting for the wake-up signal")
-                pass
+                print("Waiting for the wake-up signal")
         elif self.state == State.TAKING_PICTURE:
             if self.taking_picture_entered == False:
                 self.taking_picture_entered = True
                 self.move_head("up")
                 self.take_stylish_picture()
             else:
-                #print("Waiting for picture")
-                pass
+                print("Waiting for picture")
+        elif self.state == State.WAIT_FOR_PAINTING_CONFIRMATION:
+            print("Waiting for confirmation to start painting")
         elif self.state == State.PAINTING:
             if self.drawing_entered == False:
                 self.drawing_entered = True
                 self.move_head("down")
                 self.draw_face()
             else:
-                #print("Waiting for drawing")
-                pass
+                print("Waiting for drawing")
         else:
             print("Invalid state! ", self.state)
 
@@ -254,7 +276,7 @@ class Main_leonao_controller():
     
     def draw_face(self):
         self.speak(MSG_BEFORE_PAINTING_START)
-        raw_input("press enter to draw")
+        # raw_input("press enter to draw")
 
         self.draw_path_pub.publish(self.paths_file)
         print("Waiting for drawing")
