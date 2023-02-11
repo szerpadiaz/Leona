@@ -193,71 +193,77 @@ class Handler(FileSystemEventHandler):
 
             elif file[-15:] == "sketch_face.jpg":
                 print("Sketching face")
+                f = open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.pkl", "rb")   
+                paths = pickle.load(f)
+                f.close()
 
-                # This sleep is as a workaround for the fact that the file 
-                #   is not yet fully written when the event is triggered.
-                #   Timing could be further reduced
-                time.sleep(1)
-                img = cv2.imread(file)
-
-                if img is None:
+                # Need to check here if there are no paths yet, because the event is triggered twice
+                # TODO: Investigate why the event is triggered twice and if we just need to listen to the second event as then the file might be fully written
+                if paths == "Still processing": 
+                    # The following sleep is a workaround for the fact that the file 
+                    #   is not yet fully written when the event is triggered.
+                    #   Timing could be further reduced
+                    time.sleep(1)
                     img = cv2.imread(file)
+
                     if img is None:
-                        print("Tried to read the file twice but failed")
-                         # After introducing the sleep above this has not happnend yet
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        img = cv2.imread(file)
+                        if img is None:
+                            print("Tried to read the file twice but failed")
+                            # After introducing the sleep above this has not happnend yet
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-                # Sketching face
-                output_img, output_face_mask = sketcher.run(img)
+                    # Sketching face
+                    output_img, output_face_mask = sketcher.run(img)
 
-                top_left_point, bottom_right_point = get_bb_points_ratio43(output_face_mask, y_pad=(0.8, 0.05))
-                
-                ## Eroding face mask to avoid double edges around face (due to splitting of face and background)
-                # Calculate iterations based on image size
-                shape = output_img.shape
-                iterations = int(shape[1]/64)
+                    top_left_point, bottom_right_point = get_bb_points_ratio43(output_face_mask, y_pad=(0.8, 0.05))
+                    
+                    ## Eroding face mask to avoid double edges around face (due to splitting of face and background)
+                    # Calculate iterations based on image size
+                    shape = output_img.shape
+                    iterations = int(shape[1]/64)
 
-                kernel = np.ones((3,3),np.uint8)
-                output_face_mask = cv2.erode(output_face_mask, kernel, iterations = iterations)
+                    kernel = np.ones((3,3),np.uint8)
+                    output_face_mask = cv2.erode(output_face_mask, kernel, iterations = iterations)
 
-                # Convert face_sketch and face_mask to binary
-                output_img = output_img*255 
-                _, output_img = cv2.threshold(output_img, 127, 255, cv2.THRESH_BINARY)
-                
-                # Generate inner_sketch and outer_sketch using mask
-                inner_sketch = output_img * output_face_mask + (1-output_face_mask)*255
-                outer_sketch = output_img * (1 - output_face_mask) + (output_face_mask*255)
+                    # Convert face_sketch and face_mask to binary
+                    output_img = output_img*255 
+                    _, output_img = cv2.threshold(output_img, 127, 255, cv2.THRESH_BINARY)
+                    
+                    # Generate inner_sketch and outer_sketch using mask
+                    inner_sketch = output_img * output_face_mask + (1-output_face_mask)*255
+                    outer_sketch = output_img * (1 - output_face_mask) + (output_face_mask*255)
 
-                # Store generated files (for debugging and insight but also for the next step)
-                thresholded_sketch_file = DIRECTORY_TO_WATCH + "/" + "thresholded.bmp"
-                outer_sketch_file = DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp"
-                inner_sketch_file = DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp"
-                cv2.imwrite(thresholded_sketch_file, (output_img).astype(np.uint8))
-                cv2.imwrite(outer_sketch_file, (outer_sketch).astype(np.uint8))
-                cv2.imwrite(inner_sketch_file, (inner_sketch).astype(np.uint8))
-                
-                face_info = {"inner": inner_sketch_file, "outer" : outer_sketch_file,  "top_left_point" : top_left_point, "bottom_right_point" : bottom_right_point}
-                
-                # Generate face paths
-                face_paths_gen = Face_paths_generator(face_info)
-                face_outer_paths = face_paths_gen.get_face_outer_path()
-                face_inner_paths = face_paths_gen.get_face_inner_path()
-                face_inner_paths_norm = face_paths_gen.normalize_face_path(face_inner_paths)
-                face_outer_paths_norm = face_paths_gen.normalize_face_path(face_outer_paths)
-                all_paths = {"inner": face_inner_paths_norm, "outer": face_outer_paths_norm}
-                print("All Paths size: ", (len(all_paths["inner"]) + len(all_paths["outer"])))
-                print("All Path points amount: ", sum([len(list) for list in all_paths["inner"]]) + sum([len(list) for list in all_paths["outer"]]))
-                with open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.pkl", "wb") as f:
-                    pickle.dump(all_paths, f, protocol=2)
+                    # Store generated files (for debugging and insight but also for the next step)
+                    thresholded_sketch_file = DIRECTORY_TO_WATCH + "/" + "thresholded.bmp"
+                    outer_sketch_file = DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp"
+                    inner_sketch_file = DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp"
+                    cv2.imwrite(thresholded_sketch_file, (output_img).astype(np.uint8))
+                    cv2.imwrite(outer_sketch_file, (outer_sketch).astype(np.uint8))
+                    cv2.imwrite(inner_sketch_file, (inner_sketch).astype(np.uint8))
+                    
+                    face_info = {"inner": inner_sketch_file, "outer" : outer_sketch_file,  "top_left_point" : top_left_point, "bottom_right_point" : bottom_right_point}
+                    
+                    # Generate face paths
+                    face_paths_gen = Face_paths_generator(face_info)
+                    face_outer_paths = face_paths_gen.get_face_outer_path()
+                    face_inner_paths = face_paths_gen.get_face_inner_path()
+                    face_inner_paths_norm = face_paths_gen.normalize_face_path(face_inner_paths)
+                    face_outer_paths_norm = face_paths_gen.normalize_face_path(face_outer_paths)
+                    all_paths = {"inner": face_inner_paths_norm, "outer": face_outer_paths_norm}
+                    print("All Paths size: ", (len(all_paths["inner"]) + len(all_paths["outer"])))
+                    print("All Path points amount: ", sum([len(list) for list in all_paths["inner"]]) + sum([len(list) for list in all_paths["outer"]]))
+                    with open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.pkl", "wb") as f:
+                        pickle.dump(all_paths, f, protocol=2)
 
-                
-                # Visualize the paths
-                l_painter = Leonao_painter()
-                face_outer_paths_original = deepcopy(face_outer_paths)
-                face_inner_paths_original = deepcopy(face_inner_paths)
-                l_painter.draw(face_outer_paths_original, face_inner_paths_original)
+                    
+                    # Visualize the paths
+                    l_painter = Leonao_painter()
+                    face_outer_paths_original = deepcopy(face_outer_paths)
+                    face_inner_paths_original = deepcopy(face_inner_paths)
+                    l_painter.draw(face_outer_paths_original, face_inner_paths_original)
 
-                return None
+                    return None
 
 
 
