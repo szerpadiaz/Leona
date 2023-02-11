@@ -33,6 +33,7 @@ class Leonao_canvas():
 import pickle
 
 class Leonao_painter:
+    #TODO-Sergio add comments
     def __init__(self):
         self.canvas = Leonao_canvas()
         self.draw_face_outer_paths = []
