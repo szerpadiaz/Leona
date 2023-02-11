@@ -231,7 +231,6 @@ class Sketcher:
         cols = 3
         plt.figure(figsize=(5*cols,5*rows))
         
-        imgs = []
         i = 1
         for k in data.keys():
             if not (k in ['A_paths', 'center', 'all_kps_tf']):
