@@ -51,7 +51,6 @@ def print_bezier_path(path):
     Iterate over path curves and 
     convert it into an array of simple paths (with (x,y) pairs))
     """
-    simple_paths = []
     total_curves = 0
     for curve in path.curves:
         total_curves +=1
@@ -87,7 +86,7 @@ def get_bezier_path(image, turdsize):
     alphamax = 1.3333 # from 0.0 (polygon) to 1.3333 (no corners).
     opticurve = 1 
     opttolerance = 0.9
-    # progress_func ?
+
     path = bmp.trace(turdsize, turnpolicy, alphamax, opticurve, opttolerance)
 
     return path    
