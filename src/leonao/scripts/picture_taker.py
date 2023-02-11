@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+
+"""
+Seperate node caring to take high quality pictures
+"""
+
 import rospy
 import os
 import cv2
@@ -20,7 +25,20 @@ if USE_MEDIA_PIPE_DIRECT:
     from face_detector import FaceDetector
 
 class pictureTaker:
-    def __init__(self, imageSource = "ALProxy"): # imageSource "ALProxy", "TestPicutre", "Local" or "RosStream"
+
+    """
+    Class to take pictures, can be initialized via 4 different modes to accompany different test and use cases
+    - Default: ALProxy - uses the AL Picture Proxy to take high resolution picutres with adjusted settings
+    - TestPicture - Uses the last saved image and triggers further steps by still deleting the result files and saving the image again
+    - Local - Uses the the internal laptop/pc camera to take a picture (optimized for linux, might need different settings for other OSs)
+    - RosStream - Uses the low resolution ROS Stream (legacy)
+    Resets the result files to indicate to the imageProcessing program that new results need to be calculated
+    Saves the image to trigger the watchfolder imageProcessing
+
+    Publishes success state via "picture_taken" topic
+    """
+
+    def __init__(self, imageSource = "ALProxy"): # imageSource "ALProxy", "TestPicture", "Local" or "RosStream"
         self.local = False
         if imageSource == "Local":
             self.local = True
@@ -29,9 +47,6 @@ class pictureTaker:
             self.IMAGE_ROTATION = False
         else:
             self.IMAGE_ROTATION = cv2.ROTATE_90_COUNTERCLOCKWISE
-            # cv2.ROTATE_90_COUNTERCLOCKWISE
-            # cv2.ROTATE_180
-            # cv2.ROTATE_90_CLOCKWISE
         self.minFaceSize = 0.1
         self.minBrightness = 50
         self.maxBrightness = 200
@@ -60,21 +75,33 @@ class pictureTaker:
         self.picture_taken_pub = rospy.Publisher('picture_taken', Bool, queue_size=1)
     
     def take_picture_callback(self, data):
-        # print("take_picture_callback")
+        """ 
+        Receiving trigger and publishing success state
+        :param data: not in use
+        """
         success = self.take_stylish_picture()
         self.picture_taken_pub.publish(success)
 
     def takePicture(self, path):
+        """
+        Takes a picture accordig to its initialized mode and saves it
+        :param path: storage location of taken image within WATCHFOLDER_PATH
+
+        returns BGR and RGB image (seperately)
+        important return is the saving of the image though
+        """
         if self.local:
             _, frame = self.camera.read()
-            cv2.imwrite(path, frame)
+            cv2.imwrite(WATCHFOLDER_PATH + path, frame)
             return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         else:
-            if self.imageSource == "TestPicutre":
+            if self.imageSource == "TestPicture":
                 img = cv2.imread(WATCHFOLDER_PATH + path)
             elif self.imageSource == "RosStream":
                 img = self.bridge.imgmsg_to_cv2(self.currentImageFromStream, desired_encoding='bgr8')
             elif self.imageSource == "ALProxy":
+                # // kVGA (640x480) or k4VGA (1280x960, only with the HD camera).
+                # // (Definitions are available in alvisiondefinitions.h)
                 resolution = vd.k4VGA
                 colorSpace = vd.kBGRColorSpace
                 fps = 10
@@ -84,27 +111,15 @@ class pictureTaker:
                 # 1: Weighted average scene Brightness
                 # 2: Adaptive weighted auto exposure for hightlights
                 # 3: Adaptive weighted auto exposure for lowlights
-                self.camProxy.setCameraParameter(self.camId, vd.kCameraHFlipID, 0) # not checked yet
-                self.camProxy.setCameraParameter(self.camId, vd.kCameraAutoExpositionID, 1) # not checked yet
-                self.camProxy.setCameraParameter(self.camId, vd.kCameraExposureAlgorithmID, 2) # not checked yet
-                self.camProxy.setCameraParameter(self.camId, vd.kCameraBrightnessID, 55) # not checked yet
-                self.camProxy.setCameraParameter(self.camId, vd.kCameraSharpnessID, 0) # not checked yet
-                print(self.camProxy.getCameraParameter(self.camId, vd.kCameraBrightnessID))
-                #self.camProxy.setResolution(self.camId, vd.kVGA)
-
-                # Might be able to change resolution as well
-                # // kVGA (640x480) or k4VGA (1280x960, only with the HD camera).
-                # // (Definitions are available in alvisiondefinitions.h)
-                #self.camProxy.setParam(14, vd.k4VGA) # not checked yet
-
-                # Maybe also sharpness helps:
-                # Set sharpness to 2
-                #self.camProxy.setParameter(int(self.camId[-1]), vd.kCameraSharpnessID, 7) # not checked yet
+                self.camProxy.setCameraParameter(self.camId, vd.kCameraHFlipID, 0)
+                self.camProxy.setCameraParameter(self.camId, vd.kCameraAutoExpositionID, 1)# auto exposure
+                self.camProxy.setCameraParameter(self.camId, vd.kCameraExposureAlgorithmID, 2) # exposure for highlights (having the biggest effect for good images)
+                self.camProxy.setCameraParameter(self.camId, vd.kCameraBrightnessID, 55) # overall brightness - 55 is default
+                self.camProxy.setCameraParameter(self.camId, vd.kCameraSharpnessID, 0) # no pre-sharpening
                 img = self.camProxy.getImageRemote(self.camId)
                 img = np.frombuffer(img[6], dtype=np.uint8).reshape((img[1], img[0], 3))
                 self.camProxy.unsubscribe(self.camId)
                 print("Image taken from ALProxy")
-                print("Image shape: " + str(img.shape))
             if self.IMAGE_ROTATION:
                 img = cv2.rotate(img, self.IMAGE_ROTATION)
             with open(WATCHFOLDER_PATH + "face_detection_result.txt", "w") as f: # Reset the observation results
@@ -115,7 +130,23 @@ class pictureTaker:
             print("Image saved in " + WATCHFOLDER_PATH + path)
             return img, cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    def analyzePicture(self, img, showAnalysis = False):
+    def analyzePicture(self, img):
+        """
+
+        Analyzes the image for:
+        - Detecting of a face
+            Done by waiting for the face detection results to be updates 
+            after the new image has been saved by the former function
+        - Minimal Face Brightness
+        - Maximal Face Brightness
+        - Minimal Face contrast
+
+        Speaks the suggestions to improve the image
+
+        Returns success State (with error description) and in case of success the image
+
+        ##### Threshold values not fully optimized #####
+        """
         bbox = ""
         while bbox == "":
             with open(WATCHFOLDER_PATH + "face_detection_result.txt", "r") as f:
@@ -175,6 +206,10 @@ class pictureTaker:
         return "Success", img
 
     def speak(self, text):
+        """ 
+        Uses ALProxy to speak, automatically setting volume to 100 and adding a pause
+        :param text: string (no random list choice as in the main controller)
+        """
         print(text)
         if self.local:
             os.system(str("say " + text))
@@ -182,6 +217,11 @@ class pictureTaker:
             self.tts.say("\\vol=100\\" + text + "\\pau=500\\")
 
     def take_stylish_picture(self):
+        """
+        Main Function speaking, starting function to take the picture and analyze.
+        Waiting until taken, analysed picture has been stylized by imageProcessing.py
+        returning success (actuall paths will be read directly from file by the picture_painter)
+        """
         self.speak("Taking a picture in 3, 2, 1. Smile!")
         success = False
         img, conv_img = self.takePicture("detect_face.jpg")
@@ -206,11 +246,18 @@ class pictureTaker:
     ################ Running Callbacks ################
 
     def newImageCallback(self, img_msg):
+        """
+        Caches images from ROS Image stream to use within picture taker, when ROSImage mode is set
+        :param img_smg: ros image input
+        """
         self.currentImageFromStream = img_msg 
 
 
 
 if __name__ == '__main__':
+    """
+    Running and spinning picture_taker node
+    """
     rospy.init_node('picture_taker', anonymous=True)
     try:
         picture_taker =  pictureTaker(imageSource = "ALProxy")
