@@ -188,9 +188,6 @@ class Handler(FileSystemEventHandler):
                 print("Face detected with bounding box:" + bbox)
                 with open(DIRECTORY_TO_WATCH + "/" + "face_detection_result.txt", "w") as f:
                     f.write(str(bbox))
-
-
-
             elif file[-15:] == "sketch_face.jpg":
                 f = open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.pkl", "rb")   
                 paths = pickle.load(f)
@@ -264,6 +261,8 @@ class Handler(FileSystemEventHandler):
                     l_painter.draw(face_outer_paths_original, face_inner_paths_original)
 
                     return None
+                else:
+                    print("Not sketching as second change")
 
 
 

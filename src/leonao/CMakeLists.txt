@@ -77,6 +77,8 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
+  scripts/picture_taker.py
+  scripts/picture_painter.py
   scripts/main_controller.py
   scripts/test_picture_painter.py
   scripts/test_picture_taker.py
