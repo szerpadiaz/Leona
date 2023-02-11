@@ -17,7 +17,7 @@ The two different python environments communicate via the watchfolder (leonao/sr
 
 ## How to make the code run
 
-1. imageProcessing.py (src/leonao/libraries/imageProcessing.py): Run the file in a python 3 terminal. Make sure the *DIRECTORY_TO_WATCH = "/home/hrsa/leonao/src/leonao/watchfolder"* is set correctly. 
+1. imageProcessing.py (src/leonao/libraries/imageProcessing.py): Run the file in a python 3.8 or newer terminal. Make sure the *DIRECTORY_TO_WATCH = "/home/hrsa/leonao/src/leonao/watchfolder"* is set correctly. 
 For the Labs PC (A) you can source the *project_setup_sketcher.bash* file from the project root.
 Required packages are 
 - opencv
@@ -31,8 +31,7 @@ Required packages are
 - pillow / PIL
 - tkinter
 - potrace
-
-<!--- #TODO-David: do you have a list here? --->
+(Exact requirements available in sketcher/reqs.txt)
 
 2. In python2 terminals you can run roscore, the nao bringup and *leonao.launch*. After some general startup you can press enter in the terminal (will see a prompt to do so) to start LeoNaos interaction with you. The rest of the interaction can be controlled through LeoNaos head buttons when prompted to do so (Front: Starting to take a picture and accepting the picture to start drawing, Back: Canceling the sketch and take a new picture)
 
