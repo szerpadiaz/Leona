@@ -1,5 +1,5 @@
 # LeoNao
-The LeoNao Da Vinci project is a student project in the Humanoid Robotic Systems lecture of the TUM.
+*LeoNao Da Vinci* is a student project in the Humanoid Robotic Systems lecture of the TUM within the Winter Semester 2022/23.
 
 ###  Students of Group A:
 * Sergio Zerpa
@@ -20,11 +20,12 @@ The two different python environments communicate via the watchfolder (leonao/sr
 1. imageProcessing.py (src/leonao/libraries/imageProcessing.py): Run the file in a python 3 terminal. Make sure the *DIRECTORY_TO_WATCH = "/home/hrsa/leonao/src/leonao/watchfolder"* is set correctly. 
 For the Labs PC (A) you can source the *project_setup_sketcher.bash* file from the project root.
 Required packages are 
-#TODO-David: do you have a list here?
+<!--- #TODO-David: do you have a list here? --->
 
 2. In python2 terminals you can run roscore, the nao bringup and *leonao.launch*. After some general startup you can press enter in the terminal (will see a prompt to do so) to start LeoNaos interaction with you. The rest of the interaction can be controlled through LeoNaos head buttons when prompted to do so (Front: Starting to take a picture and accepting the picture to start drawing, Back: Canceling the sketch and take a new picture)
 
 ### Optional: Recallibrating the drawing canvas
 
 The canvas usually does not have to be recalibrated between drawings or even startups. Though, if the drawing canvas is moved relative to the robot (in XY or height) you should recallibrate. 
-#TODO-Ingo could you add how to do this?
+
+<!--- #TODO-Ingo could you add how to do this? --->
