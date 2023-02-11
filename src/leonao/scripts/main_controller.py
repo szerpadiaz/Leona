@@ -1,5 +1,20 @@
 #!/usr/bin/env python
-## Main application controller
+"""
+# Main application controller implementing a finite state machine (FSM)
+
+Uses Events to go through the states: IDLE, TAKING_PICTURE, WAIT_FOR_PAINTING_CONFIRMATION, PAINTING
+Triggers the follwing nodes: 
+- take_picture
+- draw path
+- ALProxy ALTextToSpeech
+- AL Proxy ALMotion
+
+Subscribes to:
+- picture_taken
+- painting_done
+- /nao_robot/camera/top/camera/image_raw
+
+"""
 
 import rospy
 import cv2
@@ -21,6 +36,23 @@ SKETCH_FACE_PATHS_FILE = WATCHFOLDER_PATH + "sketcher_result.pkl"
 
 MSG_THANKS = "Thank you for visiting my studio, come back soon!"
 MSG_BEFORE_SIESTA = "I am going to take a nap now. See you later!"
+
+"""
+The Following messages are created by Chat GPT using the following prompt:
+You are LeoNao Davinci, a robot that thinks he is Leonardo Davinci. He is drawing portraits for money and here are things (in python code) he sais:
+
+INTRO_MSG_1 = ["Hello! I am Leonao, Leonao Davinci. Welcome to my studio!", "Step right up, step right up! I, the great Leonardo Da Vinci, am here to paint your portrait!"]
+INTRO_MSG_2 = ["If you want a beautiful picture, please press the button on the front of my head", "I can draw a masterpiece for you. Just come here and touch my head to start."]
+TAKING_PICTURE_INSTRUCTIONS_1 = ["OK! lets get started", "Alright, let's do this!", "Here we go!"]
+TAKING_PICTURE_INSTRUCTIONS_2 = ["Please position yourself in front of me and get ready for the picture.", "Hold still, my friend! I don't want to capture your nerves, just your beauty."]
+
+MSG_AFTER_SUCCESS_PICTURE_TAKEN = "Well done! please relax and enjoy while I paint you. Don't worry, I'll make you look better than you do in real life."
+MSG_PICTURE_TAKEN_FAILED = "OH no, let's try again!"
+MSG_PAINTING_IS_DONE = "I am done, here it is your beautiful picture! That would be 5 Euro please!"
+
+Can you give me some more variation on this? Please directly write code where the constants store lists of things to say. Create 5 variations each
+
+"""
 
 INTRO_MSG_1 = [
 "Greetings! I am LeoNao Davinci, the mechanical artist.",
@@ -79,6 +111,7 @@ MSG_PAINTING_IS_DONE = [
 
 
 class Event(IntEnum):
+    # Storing Events as Enum for later Reference
     FRONT_BUTTON = 1
     REAR_BUTTON = 2
     PICTURE_SUCCESS = 3
@@ -86,6 +119,7 @@ class Event(IntEnum):
     PAINTING_DONE = 5
 
 class State(IntEnum):
+    # Storing States as Enum for later Reference
     IDLE = 1
     TAKING_PICTURE = 2
     WAIT_FOR_PAINTING_CONFIRMATION = 3
@@ -130,13 +164,24 @@ class Main_leonao_controller():
 
 
     def disable_head_stiffness(self):
+        """ 
+        Disable Stiffness of head only 
+        """
         self.head_proxy.stiffnessInterpolation('Head', 0.0, 1.0)
 
     def enable_head_stiffness(self):
+        """ 
+        Enable Stiffness of head only to avoid overheating 
+        """
         self.head_proxy.stiffnessInterpolation('Head', 1.0, 1.0)
 
 
     def showImageCallback(self, img_msg):
+        """  
+        Displays ROS Stream of Naos top camera (low resolution)
+        Triggered when new image arrives
+        :param img_msg: Ros Image message
+        """
         img = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding='bgr8')
         img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
         cv2.imshow("Current Image", img)
@@ -144,6 +189,11 @@ class Main_leonao_controller():
         
     
     def speak(self, text, nonBlocking = False):
+        """
+        Speaks and prints text, automatically adds full volume and short pause after text
+        :param text: List or string (random selection for list input)
+        :param nonBlocking: Using .post function to proxy to be non-blocking
+        """
         if type(text) == str:
             if nonBlocking:
                 print(text)
@@ -157,34 +207,41 @@ class Main_leonao_controller():
             print("Speech input: " + text + " of type: " + type(text) + " not recognized!")
         
     def head_touch_callback(self, head_touch_event):
+        """
+        Callback function for head touch, sets events for state machine
+        :param head_touch_event: Event from rospy subscribed callback
+        """
         if (head_touch_event.button == HeadTouch.buttonFront and head_touch_event.state == HeadTouch.statePressed):
             self.event = Event.FRONT_BUTTON
-            # print("self.event = Event.FRONT_BUTTON")
             self.check_event()
         elif (head_touch_event.button == HeadTouch.buttonRear and head_touch_event.state == HeadTouch.statePressed):
             self.event = Event.REAR_BUTTON
             self.check_event()
-        # else:
-        #     print("another touch event")
 
     def picture_taker_event_callback(self, data):
-        # print("picture_taker_event_callback")
+        """ 
+        Callback for Rospy subscription of picture taker node
+        Sets event to PICTURE_SUCCESS or PICTURE_FAILED
+        :param data: success state of picture taker node
+        """
         success = data.data
         self.event = Event.PICTURE_SUCCESS if success else Event.PICTURE_FAILED
         self.check_event()
 
     def picture_painter_event_callback(self, data):
-        # print("picture_painter_event_callback")
+        """
+        Callback for Rospy subscription of picture painter node
+        Always sets event to PAINTING_DONE if callback triggered
+        :param data: Currently not used
+        """
         self.event = Event.PAINTING_DONE
         self.check_event()
 
-    #def keyboard_event_callback(self):
-    #    event = int(input("Enter event number: "))
-    #    self.event = Event(event)
-    #    self.check_event()
-
     def move_head(self, target):
-        # Moves head to target ("up" or "down")
+        """
+        Moves head to target as pre-defined up or down positions
+        :param target: string "up" or "down"
+        """
 
         up_position = [-1.9, 0]
         down_position = [-0.19, 0]
@@ -200,6 +257,9 @@ class Main_leonao_controller():
 
 
     def check_event(self):
+        """
+        Takes action and chnges state according to last registered event
+        """
         valid_event = False
         if self.state == State.IDLE:
             if self.event == Event.FRONT_BUTTON:
@@ -237,11 +297,13 @@ class Main_leonao_controller():
                 self.drawing_entered = False
                 valid_event = True
                 print("Waiting for the wake-up signal")
-        ##self.event = None
         if(valid_event == False):
             print("Invalid (state, event): ", self.state, self.event)
 
     def check_state(self):
+        """
+        Takes action accoring to current state
+        """
         if self.state == State.IDLE:
             if self.idle_entered == False:
                 self.idle_entered = True
@@ -268,6 +330,9 @@ class Main_leonao_controller():
             print("Invalid state! ", self.state)
 
     def take_stylish_picture(self):
+        """
+        Triggers picutre taker node after speaking instructions
+        """
         self.speak(TAKING_PICTURE_INSTRUCTIONS_1)
         self.speak(TAKING_PICTURE_INSTRUCTIONS_2, nonBlocking=True)
         self.take_picture_pub.publish()
@@ -275,14 +340,20 @@ class Main_leonao_controller():
 
     
     def draw_face(self):
+        """
+        Triggers picture drawing node after speking instructions
+        """
         self.speak(MSG_BEFORE_PAINTING_START)
-        # raw_input("press enter to draw")
+        # raw_input("press enter to draw") # This line can be used when testing to make sure nothing is drawn
 
         self.draw_path_pub.publish(self.paths_file)
         print("Waiting for drawing")
                 
 
 if __name__ == '__main__':
+    """
+    Starting main contoroller node
+    """
 
     rospy.init_node('main_controller', anonymous=True)
 
