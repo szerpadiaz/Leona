@@ -192,7 +192,6 @@ class Handler(FileSystemEventHandler):
 
 
             elif file[-15:] == "sketch_face.jpg":
-                print("Sketching face")
                 f = open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.pkl", "rb")   
                 paths = pickle.load(f)
                 f.close()
@@ -200,6 +199,7 @@ class Handler(FileSystemEventHandler):
                 # Need to check here if there are no paths yet, because the event is triggered twice
                 # TODO: Investigate why the event is triggered twice and if we just need to listen to the second event as then the file might be fully written
                 if paths == "Still processing": 
+                    print("Sketching face")
                     # The following sleep is a workaround for the fact that the file 
                     #   is not yet fully written when the event is triggered.
                     #   Timing could be further reduced
