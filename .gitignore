@@ -9,3 +9,4 @@ build/
 devel/
 src/hrl-kdl/
 .vcode
+.pyc
