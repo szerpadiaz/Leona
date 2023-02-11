@@ -1,3 +1,8 @@
+"""
+Coding UTF8
+Adapted from https://github.com/yiranran/APDrawingGAN
+Test archtiecture of the APDrawingGAN to be used for inference.
+"""
 from .base_model import BaseModel
 from . import networks
 import torch

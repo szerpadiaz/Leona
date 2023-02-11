@@ -1,3 +1,6 @@
+"""
+Class that contains all necessary options for properly loading the APDrawingGAN and setting its weights to the pretrained ones.
+"""
 class Options:
     def __init__(self, model_path =''):
 

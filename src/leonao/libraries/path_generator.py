@@ -1,3 +1,7 @@
+"""
+Coding UTF8
+Module to Generate Paths from the output of the stylization module
+"""
 import math
 import numpy as np
 import potrace
@@ -9,24 +13,33 @@ import matplotlib.pyplot as plt
 #####################################################
 ################# Supporter functions ###############
 #####################################################
-
-
 def erode(img, size, shape=cv2.MORPH_CROSS):
+    """
+    Apply erision operator to image
+    """
     element = cv2.getStructuringElement(shape, (2 * size + 1, 2 * size + 1),
                                        (size, size))
     return cv2.erode(img, element)
 
 def dilate(img, size, shape=cv2.MORPH_CROSS):
+    """
+    Apply dilation operator to image
+    """
     element = cv2.getStructuringElement(shape, (2 * size + 1, 2 * size + 1),
                                        (size, size))
     return cv2.dilate(img, element)
 
 
 def blur(img, size):
+    """
+    Apply blur to image
+    """
     return cv2.GaussianBlur(img, (size,size), size/2)
 
-
 def show(img, title=''):
+    """
+    Display image
+    """
     _,img = cv2.threshold(img,127,255,cv2.THRESH_BINARY)
     plt.figure()
     plt.imshow(img, cmap='gray')
@@ -34,8 +47,10 @@ def show(img, title=''):
     return img
 
 def print_bezier_path(path):
-    # Iterate over path curves and 
-    # convert it into an array of simple paths (with (x,y) pairs))
+    """
+    Iterate over path curves and 
+    convert it into an array of simple paths (with (x,y) pairs))
+    """
     simple_paths = []
     total_curves = 0
     for curve in path.curves:
@@ -58,7 +73,11 @@ def print_bezier_path(path):
     print("TOTAL CURVES = ", total_curves )
 
 def get_bezier_path(image, turdsize):
-    
+    """
+    Create bezier paths using pypotrace
+    :param image: input binary image
+    :param turdsize: minimum size of blob in order to be traced
+    """
     data = np.asarray(image, dtype=np.uint8)
     data = (data > 0).astype(np.bool_)
     bmp = potrace.Bitmap(data)
@@ -74,6 +93,12 @@ def get_bezier_path(image, turdsize):
     return path    
 
 def convert_bezier_segment_into_simple_segments(start_point, bezier_segment, points_per_segment):
+    """
+    downsample a bezier curve to connected straight line segments
+    :param start_point: starting points of the curve
+    :param bezier_segment: bezier points
+    :param points_per_segment: Number of wanted subdivisions for new linear segment
+    """
     simple_segments = []
     for i in range(points_per_segment):
         t = i / points_per_segment
@@ -88,8 +113,10 @@ def convert_bezier_segment_into_simple_segments(start_point, bezier_segment, poi
     return simple_segments
 
 def convert_to_simple_paths(bezier_path, points_per_bezier_segment):
-    # Iterate over path curves and 
-    # convert it into an array of simple paths (with (x,y) pairs))
+    """
+    Iterate over path curves and 
+    convert it into an array of simple paths (with (x,y) pairs))
+    """
     simple_paths = []
     total_points = 0
     for curve in bezier_path.curves:
@@ -111,7 +138,11 @@ def convert_to_simple_paths(bezier_path, points_per_bezier_segment):
     
     print("TOTAL PATHS = ",  len(simple_paths), " ; TOTAL POINTS = ", total_points)
     return simple_paths
+
 def eliminate_out_of_range(paths, min, max):
+    """
+    Remove points that are not in the proper drawing range
+    """
     total_new_points = 0
     new_paths = []
     for path in paths:
@@ -135,6 +166,9 @@ def eliminate_out_of_range(paths, min, max):
     return new_paths
 
 def normalize_paths(simple_paths, top_left_point, bottom_right_point):
+    """
+    Normalize all paths to be between 0 and 1 in order to dynamically apply them to the real world canvas.
+    """
     height = bottom_right_point[1] - top_left_point[1]
     width = bottom_right_point[0] - top_left_point[0]
 
@@ -152,12 +186,14 @@ def normalize_paths(simple_paths, top_left_point, bottom_right_point):
         new_paths.append(new_path)
     return new_paths
 
+
 ##########################################################################################
 ################## Face paths generator class ###########################################
 ##########################################################################################
-
-
 class Face_paths_generator():
+    """
+    Generate paths from the face regions
+    """
     def __init__(self, face_info):
         self.top_left_point = face_info["top_left_point"]
         self.bottom_right_point = face_info["bottom_right_point"]
@@ -165,6 +201,9 @@ class Face_paths_generator():
         self.inner_img_file = face_info["inner"]
 
     def get_face_outer_path(self):
+        """
+        Read the outer face image from the watchfolder and process it
+        """
         img = cv2.imread(self.outer_img_file, cv2.IMREAD_GRAYSCALE)
         _, img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
 
@@ -187,6 +226,9 @@ class Face_paths_generator():
         return face_outer_paths
 
     def get_face_inner_path(self):
+        """
+        Read the inner face image from the watchfolder and process it.
+        """
         img = cv2.imread(self.inner_img_file, cv2.IMREAD_GRAYSCALE)
         _, img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
 
@@ -209,13 +251,19 @@ class Face_paths_generator():
         return face_inner_paths
 
     def normalize_face_path(self, face_path):
+        """
+        Normalize the read and processed paths
+        """
         face_path_normalized = normalize_paths(face_path, self.top_left_point, self.bottom_right_point)
         return face_path_normalized
+
 ##########################################################################################
 ################## preproccessor  ###########################################
 ##########################################################################################
-
 def preprocessor(img):
+    """
+    Apply OpenCV based preprocessing to the image
+    """
     img = erode(img,2, cv2.MORPH_ELLIPSE)
     #img = dilate(img,3, cv2.MORPH_ELLIPSE)
     img = blur(img, 5)

@@ -1,3 +1,8 @@
+"""
+Coding UTF8
+Adapted from https://github.com/yiranran/APDrawingGAN
+Model architecture for the APDrawingGAN
+"""
 import os
 import torch
 from collections import OrderedDict

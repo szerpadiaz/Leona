@@ -1,6 +1,19 @@
+"""
+# Image Processing
+
 # A function that watches a folder and reads new files as soon as they are there 
 # Then, continues the program
 
+## Face Detection - triggered through a new file called "detect_face.jpg"
+# 1. Read the image
+# 2. Detect the face
+# 3. Write the bounding box to a file called "results.txt"
+
+## Sketch Creation
+# 1. Read the image
+# 2. Detect the face (done again here to be more robust for e.g. tests)
+# 3. Create a sketch using the APDrawingGAN
+"""
 import cv2
 import time
 import numpy as np
@@ -61,6 +74,7 @@ def normalizePaths(input_paths):
 def get_bb_points_ratio43(mask, y_pad = (0.8, 0.3)):
     """
     Finds extended upper left and lower right points from input face mask.
+    Allows for precise cutting of the face to ensure maximum face area.
     Ratio of BBox is ~ 4:3
     :param mask: output mask from sketcher
     :param y_pad: Paddings added to upper (idx 0) and lower (idx 1) edge of mask
@@ -116,6 +130,9 @@ def get_bb_points_ratio43(mask, y_pad = (0.8, 0.3)):
 
 
 class Watcher():
+    # Watches the folder for changes 
+    # Trigggers the handler on change
+
     def __init__(self, DIRECTORY_TO_WATCH):
         self.observer = Observer()
         self.DIRECTORY_TO_WATCH = DIRECTORY_TO_WATCH
@@ -137,6 +154,9 @@ class Watcher():
 sketcher = Sketcher()
 
 class Handler(FileSystemEventHandler):
+    # Handles the event when a file is changed
+    # On image modification, the filename is checked and approprite action is taken (see below)
+    ## Input and output is coming through files saved to the watchfolder, the function itself has no return value
 
     @staticmethod
     def on_any_event(event):
@@ -144,47 +164,58 @@ class Handler(FileSystemEventHandler):
 
 
         if event.is_directory:
-            #print("Received directory event - %s.", event.src_path)
             return None
 
         elif event.event_type == 'modified':
             file = event.src_path
             print("Received modified event - %s.", file)
-
             if file[-15:] == "detect_face.jpg":
                 print("Detecting face")
-                time.sleep(1)
+
+                # This sleep is as a workaround for the fact that the file 
+                #   is not yet fully written when the event is triggered.
+                #   Timing could be further reduced
+                time.sleep(1) 
+
                 img = cv2.imread(file)
                 if img is None:
-                    print("I slept")
                     img = cv2.imread(file)
                     if img is None:
-                        print("Tried to read the file twice but failed")
+                        print("Tried to read the file twice but failed") 
+                        # After introducing the sleep above this has not happnend yet
                 faceDetector = FaceDetector()
                 bbox, _ = faceDetector.detect_face(img)
-                print(bbox)
+                print("Face detected with bounding box:" + bbox)
                 with open(DIRECTORY_TO_WATCH + "/" + "face_detection_result.txt", "w") as f:
                     f.write(str(bbox))
             elif file[-15:] == "sketch_face.jpg":
                 f = open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.pkl", "rb")   
                 paths = pickle.load(f)
                 f.close()
-                if paths == "Still processing":
+
+                # Need to check here if there are no paths yet, because the event is triggered twice
+                # TODO: Investigate why the event is triggered twice and if we just need to listen to the second event as then the file might be fully written
+                if paths == "Still processing": 
                     print("Sketching face")
+                    # The following sleep is a workaround for the fact that the file 
+                    #   is not yet fully written when the event is triggered.
+                    #   Timing could be further reduced
                     time.sleep(1)
                     img = cv2.imread(file)
 
                     if img is None:
-                        print("I slept")
                         img = cv2.imread(file)
                         if img is None:
                             print("Tried to read the file twice but failed")
+                            # After introducing the sleep above this has not happnend yet
                     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+                    # Sketching face
                     output_img, output_face_mask = sketcher.run(img)
 
                     top_left_point, bottom_right_point = get_bb_points_ratio43(output_face_mask, y_pad=(0.8, 0.05))
                     
-                    ## Eroding face mask
+                    ## Eroding face mask to avoid double edges around face (due to splitting of face and background)
                     # Calculate iterations based on image size
                     shape = output_img.shape
                     iterations = int(shape[1]/64)
@@ -192,29 +223,15 @@ class Handler(FileSystemEventHandler):
                     kernel = np.ones((3,3),np.uint8)
                     output_face_mask = cv2.erode(output_face_mask, kernel, iterations = iterations)
 
-                    # Getting face information (This could be moved to Face_paths_generator)
-                    #
                     # Convert face_sketch and face_mask to binary
                     output_img = output_img*255 
                     _, output_img = cv2.threshold(output_img, 127, 255, cv2.THRESH_BINARY)
-                    # is output_face_mask already binary?
-
-                    # Calculate new boundaries to crop to same ratio as drawing plane (4:3)
-
-                    # Show bounding box restricted by top_left_point and bottom_right_point
-                    print(top_left_point, bottom_right_point)
-                    #cv2.rectangle(output_img, top_left_point, bottom_right_point, (0, 255, 0), 2)
-                    #cv2.imshow("output_img", output_img)
-                    #cv2.waitKey(0)
                     
-                    # Generate inner_sketch and outer_sketch
+                    # Generate inner_sketch and outer_sketch using mask
                     inner_sketch = output_img * output_face_mask + (1-output_face_mask)*255
                     outer_sketch = output_img * (1 - output_face_mask) + (output_face_mask*255)
-                    # outer_sketch = cv2.bitwise_or(output_img, output_face_mask)
-                    # output_face_mask_inverted = cv2.bitwise_not(output_face_mask)
-                    # inner_sketch = cv2.bitwise_or(output_img, output_face_mask_inverted)
 
-                    # Store generated files  
+                    # Store generated files (for debugging and insight but also for the next step)
                     thresholded_sketch_file = DIRECTORY_TO_WATCH + "/" + "thresholded.bmp"
                     outer_sketch_file = DIRECTORY_TO_WATCH + "/" + "outer_sketch.bmp"
                     inner_sketch_file = DIRECTORY_TO_WATCH + "/" + "inner_sketch.bmp"
@@ -236,6 +253,8 @@ class Handler(FileSystemEventHandler):
                     with open(DIRECTORY_TO_WATCH + "/" + "sketcher_result.pkl", "wb") as f:
                         pickle.dump(all_paths, f, protocol=2)
 
+                    
+                    # Visualize the paths
                     l_painter = Leonao_painter()
                     face_outer_paths_original = deepcopy(face_outer_paths)
                     face_inner_paths_original = deepcopy(face_inner_paths)
