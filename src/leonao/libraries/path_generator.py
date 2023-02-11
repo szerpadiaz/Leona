@@ -93,7 +93,7 @@ def get_bezier_path(image, turdsize):
 
 def convert_bezier_segment_into_simple_segments(start_point, bezier_segment, points_per_segment):
     """
-    downsample a bezier curve to connected straight line segments
+    Downsample a bezier curve to connected straight line segments
     :param start_point: starting points of the curve
     :param bezier_segment: bezier points
     :param points_per_segment: Number of wanted subdivisions for new linear segment
@@ -209,12 +209,6 @@ class Face_paths_generator():
         img = erode(img,3, cv2.MORPH_ELLIPSE)
         img = dilate(img,3, cv2.MORPH_ELLIPSE)
 
-        #img = erode(img,5, cv2.MORPH_CROSS)
-        #img = dilate(img,5, cv2.MORPH_CROSS)
-
-        #cv2.imshow("face_outer", img)
-        #cv2.waitKey(0)
-
         turdsize = 2
         SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 4 #6, 8
 
@@ -233,12 +227,6 @@ class Face_paths_generator():
 
         img = erode(img,1, cv2.MORPH_ELLIPSE)
         img = dilate(img, 1, cv2.MORPH_ELLIPSE)
-
-        #img = erode(img, 2, cv2.MORPH_CROSS)
-        #img = dilate(img, 2, cv2.MORPH_CROSS)
- 
-        #cv2.imshow("face_outer", img)
-        #cv2.waitKey(0)
 
         turdsize = 8
         SIMPLE_SEGMENTS_PER_BEZIER_SEGMENT = 8 #8, 16
@@ -264,7 +252,7 @@ def preprocessor(img):
     Apply OpenCV based preprocessing to the image
     """
     img = erode(img,2, cv2.MORPH_ELLIPSE)
-    #img = dilate(img,3, cv2.MORPH_ELLIPSE)
+    #img = dilate(img,3, cv2.MORPH_ELLIPSE) # Removed as no real improvement
     img = blur(img, 5)
     _,img = cv2.threshold(img,127,255,cv2.THRESH_BINARY)
     return img
