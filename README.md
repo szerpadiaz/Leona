@@ -32,7 +32,7 @@ Required packages are:
     - tkinter
     - potrace
 
-(Exact requirements available in Test-Setup and Archive/sketcher/reqs.txt)
+(Exact requirements available in Test-Setup and Archive/sketcher/requirements.txt)
 
 2. In python2 terminals you can run roscore, the nao bringup and *leonao.launch*. After some general startup you can press enter in the terminal (will see a prompt to do so) to start LeoNaos interaction with you. The rest of the interaction can be controlled through LeoNaos head buttons when prompted to do so (Front: Starting to take a picture and accepting the picture to start drawing, Back: Canceling the sketch and take a new picture)
 
