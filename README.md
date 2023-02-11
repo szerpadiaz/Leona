@@ -58,7 +58,6 @@ roslaunch leonao setup_example.launch
 ``` 
 You will get a prompt in the terminal that asks you if you want to calibrate the drawing plane. By answering with `y`, the calibration process will start. 
 - The program loads the current `plane_config.pkl`. 
-- By pressing enter the pen will be moved to the next point (it starts at origin/1st point) (origin).
+- By pressing enter the pen will be moved to the next point (it starts at the 1st point).
 - After one round you will be asked if you want to do another round.
 - With this process you can check the calibration and manually adjust the `plane_config.pkl` or the drawing plane if needed.
-<!--- #TODO-Ingo could you add how to do this? --->
