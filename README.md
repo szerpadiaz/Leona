@@ -36,8 +36,13 @@ Required packages are:
 
 2. In python2 terminals you can run roscore, the nao bringup and *leonao.launch*. After some general startup you can press enter in the terminal (will see a prompt to do so) to start LeoNaos interaction with you. The rest of the interaction can be controlled through LeoNaos head buttons when prompted to do so (Front: Starting to take a picture and accepting the picture to start drawing, Back: Canceling the sketch and take a new picture)
 
-### Optional: Recallibrating the drawing canvas
+### Optional: Recalibrating the drawing canvas
 
-The canvas usually does not have to be recalibrated between drawings or even startups. Though, if the drawing canvas is moved relative to the robot (in XY or height) you should recallibrate. 
+The canvas usually does not have to be recalibrated between drawings or even startups, since the last calibration is stored in the `leonao/src/leonao/config/plane_config.pkl`. If the drawing canvas is moved relative to the robot, the plane has to be recalibrated. 
+
+To start the calibration run the following command (after `catkin_make` and sourcing `devel/setup.bash`):
+```console
+roslaunch leonao setup_example.launch
+```
 
 <!--- #TODO-Ingo could you add how to do this? --->
