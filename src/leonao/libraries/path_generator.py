@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 #####################################################
 def erode(img, size, shape=cv2.MORPH_CROSS):
     """
-    Apply erision operator to image
+    Apply erosion operator to image
     """
     element = cv2.getStructuringElement(shape, (2 * size + 1, 2 * size + 1),
                                        (size, size))
