@@ -48,8 +48,7 @@ class Picture_painter():
 
     def reduceClosePoints(self, path, distance):
         print("Reducing close points, closer than " + str(distance) + "m")
-        print("Number of points before: Inside: " + str(len(path))) #+ "points outside: " + str(sum(len(s) for s in paths[1])))
-        #for group in paths:
+        print("Number of points before: " + str(len(path)))
         new_path = []
         first_point = True
         for j, point in enumerate(path):
@@ -63,7 +62,7 @@ class Picture_painter():
                 if self.distance(point, new_path[-1]) > distance:
                     new_path.append(point)
         
-        print("Number of points after: Inside: " + str(len(new_path))) #+ "points outside: " + str(sum(len(s) for s in paths[1])))
+        print("Number of points after: " + str(len(new_path)))
         return new_path
     
     def distance(self, p1, p2):
