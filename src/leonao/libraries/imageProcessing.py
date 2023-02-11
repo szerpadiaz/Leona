@@ -1,18 +1,19 @@
 """
 # Image Processing
-
-# A function that watches a folder and reads new files as soon as they are there 
-# Then, continues the program
+A function that watches a folder and reads new files as soon as they are there 
+Then, continues the program
 
 ## Face Detection - triggered through a new file called "detect_face.jpg"
-# 1. Read the image
-# 2. Detect the face
-# 3. Write the bounding box to a file called "results.txt"
+1. Read the image
+2. Detect the face
+3. Write the bounding box to a file called "results.txt"
 
 ## Sketch Creation
-# 1. Read the image
-# 2. Detect the face (done again here to be more robust for e.g. tests)
-# 3. Create a sketch using the APDrawingGAN
+1. Read the image
+2. Detect the face (done again here to be more robust for e.g. tests)
+3. Create a sketch using the APDrawingGAN
+4. Trace the lines using pypotrace
+5. Save lines into pickled dictionary of lists into watchfolder
 """
 import cv2
 import time
