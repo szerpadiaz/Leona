@@ -15,3 +15,6 @@ The main difference to regular setups is that you have to run one python file in
 
 1. imageProcessing.py (src/leonao/libraries/imageProcessing.py): Run the file in a python 3 terminal. Make sure the *DIRECTORY_TO_WATCH = "/home/hrsa/leonao/src/leonao/watchfolder"* is set correctly. 
 For the Labs PC (A) you can source the *project_setup_sketcher.bash* file from the project root.
+Required packages are 
+#TODO-David: do you have a list here?
+
