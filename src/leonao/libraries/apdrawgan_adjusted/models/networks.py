@@ -1,3 +1,8 @@
+"""
+Coding UTF8
+Adapted from https://github.com/yiranran/APDrawingGAN
+Helpder functions and Model architectures to build the APDrawingGAN
+"""
 import torch
 import torch.nn as nn
 from torch.nn import init

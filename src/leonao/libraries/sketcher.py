@@ -1,3 +1,9 @@
+"""
+Coding UTF8
+Class to combine all necessary processings steps to create a sketched binary image from an input face image.
+The Sketcher class automatically finds a face, finds face landmarks, runs all necessary preprocessing steps 
+to prepare the inputs for the APDrawingGAN, runs the APDrawGAN and returns its output.
+"""
 # Imports
 import numpy as np
 import cv2

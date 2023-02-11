@@ -1,3 +1,11 @@
+"""
+Coding UTF8
+A Face Detection object based on the mediapipe library.
+Functions:
+    - Face Detection
+    - Background Removal
+    - Detection Padding
+"""
 import mediapipe
 import matplotlib.pyplot as plt
 import cv2

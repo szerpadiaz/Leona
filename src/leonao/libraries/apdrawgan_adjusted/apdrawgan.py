@@ -1,3 +1,8 @@
+"""
+Coding UTF8
+Loads the APDrawingGan model, Initializes it with pretrained weights and runs it with set inputs.
+This inputs to the APDrawGAN are processed in the Sketcher module
+"""
 from models import create_model
 import os
 from opt import Options

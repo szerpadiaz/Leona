@@ -1,3 +1,4 @@
+"""
 # Image Processing
 
 # A function that watches a folder and reads new files as soon as they are there 
@@ -12,7 +13,7 @@
 # 1. Read the image
 # 2. Detect the face (done again here to be more robust for e.g. tests)
 # 3. Create a sketch using the APDrawingGAN
-
+"""
 import cv2
 import time
 import numpy as np
