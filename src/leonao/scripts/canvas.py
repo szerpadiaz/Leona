@@ -1,5 +1,14 @@
 #!/usr/bin/env python
-## Example to setup the frameworks for the canvas
+"""
+The canvas class configures and moves the right arm of a NAO robot to draw on a canvas.
+
+- Uses the ALMotion, ALProxy and numpy modules, as well as a service to compute the inverse kinematics (leonao.srv)
+- Initializes the robot, enables arm stiffness, and sets the speed of motion.
+- Allows the configuration of the drawing plane, either by collecting three points in space to calculate the plane, or 
+  by loading the plane data from a saved file. 
+- Allows drawing geometric shapes such as lines, rectangles and ellipses
+- Allows drawing a customised shaped given as a path of line segments (list of points specified as x,y tuples)
+"""
 
 from curses.textpad import rectangle
 from locale import normalize
@@ -17,15 +26,18 @@ import pickle
 
 from leonao.srv import Nao_RArm_chain_get_angles, Nao_RArm_chain_get_transform
 
-# Naming convention:
+# Physical setup reference frames:
 # - BASE-FRAME    : the frame attached to the NAO's Torso (in our case is fixed, the robot is not moving)
-# - WRIST-FRAME   : the frame attached to the NAO's RArm end-effector
 # - TOOL-FRAME    : the frame attached to the tip of the marker
 # - STATION-FRAME : the frame attached to the Table where Leonao is painting (this is our workstation universal reference)
-# - GOAL-FRAME    : the frame indicating where the tip of the marker should move to
 
 class Canvas():
     def __init__(self):
+        """
+        Sets up the canvas for drawing.
+        It initializes the necessary variables, proxies, drawing plane configuration 
+        and the robot's joints for drawing.
+        """
         robot_ip=str(os.getenv("NAO_IP"))
         robot_port=int(9559)
         self.motion_proxy = ALProxy("ALMotion", robot_ip, robot_port)
@@ -51,6 +63,13 @@ class Canvas():
         self.go_to_point([0, 0])
 
     def configure_drawing_plane(self):
+        """
+        Configures the drawing plane by either loading pre-defined plane points from a file or getting new plane points from the user.
+        
+        If the user chooses to configure the plane, the get_configuration method is called to get 3 points that define the plane. 
+        The points are then saved to a file for future use.
+        If the user chooses not to configure the plane, the method tries to load the plane points from a file.
+        """
         #choice = raw_input("Configure drawing plane? (y,n) ")[0].lower()
         choice = 'n'
         if(choice == 'y'):
@@ -69,6 +88,10 @@ class Canvas():
         self.calculate_drawing_plane(plane_point_1, plane_point_2, plane_point_3)
 
     def save_config(self, plane_points):
+        """
+        Saves the plane points to a configuration file.
+        :param plane_points: list of the three points in the plane
+        """
         # Path to the plane config file (3 points that define the drawing plane)
         abs_path = os.path.dirname(os.path.abspath(__file__)) + "/../config/plane_config.pkl"
         # Open a file for writing
@@ -79,6 +102,10 @@ class Canvas():
         config_file.close()
 
     def load_config(self):
+        """
+        Loads the plane points from the configuration file.
+        Return the plane_points
+        """
         # Path to the plane config file (3 points that define the drawing plane)
         abs_path = os.path.dirname(os.path.abspath(__file__)) + "/../config/plane_config.pkl"
         # Open the file for reading
@@ -90,6 +117,12 @@ class Canvas():
         return plane_points
 
     def move_to_plane_point(self, i, start_point, end_point):
+        """
+        Move the robot to the i-th point on the plane.
+        param: i: the index of the point on the plane.
+        param: start_point: a list of 3 float values representing the starting point in 3D space.
+        param: end_point: a list of 3 float values representing the ending point in 3D space.
+        """
         # Read 1st point/origin
         print("Moving to point #", i ," of the plane.")
         line_path = self.calculate_line_path_3D(start_point, end_point)
@@ -102,6 +135,10 @@ class Canvas():
         
 
     def get_configuration(self):
+        """
+        Get 3D points from the user for plane configuration
+        Return the points provided by the user 
+        """
         success = False
         x_offset = 0.0
 
@@ -125,6 +162,12 @@ class Canvas():
         return plane_point_1, plane_point_2, plane_point_3
 
     def calculate_line_path_3D(self, start_point, end_point):
+        """
+        Calculates a path in 3D between the start point and end point.
+        :param start_point: lists with x, y, and z coordinates.
+        :param end_point: lists with x, y, and z coordinates.
+        Returns a list of 3D points along the path which gradually goes from the start to the end point.
+        """
         line_path = []
         x0 = start_point[0]
         y0 = start_point[1]
@@ -151,6 +194,12 @@ class Canvas():
         return line_path
 
     def calculate_drawing_plane(self, plane_point_1, plane_point_2, plane_point_3):
+        """
+        calculate_drawing_plane - computes the normal and transform matrix of a 3D plane defined by three points
+        :param plane_point_1: first point on the plane (list of x, y, and z coordinates)
+        :param plane_point_2: second point on the plane (list of x, y, and z coordinates)
+        :param plane_point_3: third point on the plane, (list of x, y, and z coordinates)
+        """
         plane_point_1 = np.array(plane_point_1)
         plane_point_2 = np.array(plane_point_2)
         plane_point_3 = np.array(plane_point_3)
@@ -199,7 +248,12 @@ class Canvas():
 
 
     def calculate_angles(self, x, y, z):
-
+        """
+        Calculates the joint angles for the given position of the end-effector
+        in the tool frame (goal) with respect to the station frame.
+        :param x, y, z: position of the end-effector in the tool frame
+        Returns a list of joint angles for the desired position of the end-effector
+        """
         # T_sg: Transformation of the GOAL-FRAME (g) with respect to the STATION-FRAME (s)
         T_sg = almath.Transform(x,y,z)
 
@@ -210,7 +264,12 @@ class Canvas():
         return self.get_angles(point)
 
     def get_angles(self, point):
-        
+        """
+        Calculates the joint angles for the given position of the end-effector
+        in the tool frame (goal) with respect to the base frame.
+        :param point: goal position of the end-effector
+        Returns a list of joint angles for the desired position of the end-effector
+        """
         position6D = [point[0], point[1], point[2], 0, 0, 0]
 
         # get angles (using service)
@@ -224,6 +283,9 @@ class Canvas():
             return []
 
     def get_transform_bt(self):
+        """
+        Returns the current transformation of the right arm in the base frame (as ALMath.Transform)
+        """
         joints_names = self.motion_proxy.getBodyNames("RArm")
         joints_angles = self.motion_proxy.getAngles(joints_names, True)
         rospy.wait_for_service('Nao_RArm_chain_get_transform')
@@ -237,11 +299,19 @@ class Canvas():
             return []
 
     def get_position_bt(self):
+        """
+        Returns the current position of the robot's right arm end-effector in the base frame.
+        """
         T_temp = self.get_transform_bt()
         point = [T_temp.r1_c4, T_temp.r2_c4, T_temp.r3_c4]
         return point
 
     def move_joints(self, joints_angles_list):
+        """
+        Moves the robot's right arm to a series of target joint angles.
+        :param joints_angles_list: a list of lists.
+        Each sublist contains the target angles for the joints in the robot's right arm.
+        """
         joint_names = self.motion_proxy.getBodyNames("RArm")
         for target_angles in joints_angles_list:
             # print(target_angles[4])
@@ -255,6 +325,12 @@ class Canvas():
         self.motion_proxy.stiffnessInterpolation('RArm', 1.0, 1.0)
 
     def go_to_point(self, end_point):
+        """
+        Moves the robot arm to the given point on the canvas.
+        It moves along a line from current position to the given end point
+        (parallel to the drawing plane, without touching it)
+        :param end_point: a 2D list with x and y coordinates
+        """
         T_bt = self.get_transform_bt()
         T_sb = self.T_bs.inverse()
         T_st = T_sb * T_bt
@@ -266,6 +342,12 @@ class Canvas():
         self.move_along_path(self.x_go_to_point, line_path)
 
     def move_along_path(self, x, path):
+        """
+        Calculates the joint angles required to move to each point in the path and moves the joints accordingly.
+        :param x: the x coordinate of the plane in which to draw.
+        :param path: a list of points in the form of [y,z] to be drawn in a line.
+        """
+
         joints_angles_list = []
         for point in path:
             angles_i = self.calculate_angles(x, point[0], point[1])
@@ -278,16 +360,32 @@ class Canvas():
             self.move_joints(joints_angles_list)
 
     def draw_path(self, path):
+        """
+        Moves the arm to the first point in the path, then moves along the path.
+        :param path: a list of points in the form of [y,z] to be drawn.
+        """
+
         # Move to the first point in the path (without drawing anything)
         self.go_to_point(path[0])
         # Draw (move in drawing plane)
         self.move_along_path(self.x_drawing_plane, path)
 
     def draw_line(self, start_point, end_point):
+        """
+        Draws a line on the canvas.
+        :param start_point: The starting point of the line.
+        :param end_point: The ending point of the line.
+        """
         line_path = self.calculate_line_path(start_point, end_point)
         self.draw_path(line_path)
 
     def calculate_line_path(self, start_point, end_point):
+        """
+        Calculates a list of points along the a line from start to end points.
+        :param start_point: the starting point of the line in the form of [y,z].
+        :param end_point: the ending point of the line in the form of [y,z].
+        Returns a list of points in the form of [y,z] to be drawn.
+        """
         line_path = []
         y0 = start_point[0]
         z0 = start_point[1]
@@ -310,10 +408,24 @@ class Canvas():
         return line_path
 
     def draw_ellipse(self, center, a, b):
+        """
+        Draws an ellipse on the canvas.
+        :param center: the center of the ellipse.
+        :param a: the semi-major axis of the ellipse.
+        :param b: the semi-minor axis of the ellipse.
+        """
         ellipse_path = self.calculate_ellipse_path(center, a, b)
         self.draw_path(ellipse_path)
 
     def calculate_ellipse_path(self, center, a, b):
+        """
+        Calculate the path of an ellipse.
+        :param center: the center of the ellipse, in the form of [y,z].
+        :param a: the semi-major axis of the ellipse.
+        :param b: the semi-minor axis of the ellipse.
+        Returns a list of points in the form of [y,z] to be drawn.
+        """
+
         # max distance between two consecutive points
         max_distance = 0.01
         path = []
@@ -333,10 +445,23 @@ class Canvas():
         return path
 
     def draw_rectangle(self, center, width, height):
+        """
+        Draws a rectangle on the canvas.
+        :param center: the center of the rectangle.
+        :param width: the width of the rectangle.
+        :param height: the height of the rectangle.
+        """
         rectangle_path = self.calculate_rectangle_path(center, width, height)
         self.draw_path(rectangle_path)
 
     def calculate_rectangle_path(self, center, width, height):
+        """
+        Calculate the path of a rectangle.
+        :param center: the center of the rectangle, in the form of [y,z].
+        :param width: the width of the rectangle.
+        :param height: the height of the rectangle.
+        Returns a list of points in the form of [y,z] to be drawn.
+        """
         rectangle_path = []
         y1 = center[0] - width/2.0
         y2 = center[0] + width/2.0
