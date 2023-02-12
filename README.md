@@ -41,18 +41,26 @@ Required packages are:
 The canvas usually does not have to be recalibrated between drawings or even startups, since the last calibration is stored in the `leonao/src/leonao/config/plane_config.pkl`. If the drawing canvas is moved relative to the robot, the plane has to be recalibrated. 
 
 There are two options to calibrate the plane:
-##### 1. Use the pre-configured `plane_config.pkl` and check if the 3 points lay on the drawing plane (by letting the robot move to these 3 points) and adjust the `plane_config.pkl` or the drawing plane manually (more robust than method 2):  
+##### 1. Set the 3 points manually (more robust than method 2):
+Inside the `get_configuration` function of `canvas.py` you can manually set the points and check if they lie on the drawing plane (by letting the robot move to these points). You can then either adjust the points or the drawing plane.
+
 To start the calibration run the following command (after `catkin_make` and sourcing `devel/setup.bash`): 
 ```console
-roslaunch leonao setup_example.launch
+roslaunch leonao leonao.launch
 ``` 
 You will get a prompt in the terminal that asks you if you want to calibrate the drawing plane. By answering with `y`, the calibration process will start. 
-- The program loads the current `plane_config.pkl`. 
-- By pressing enter the pen will be moved to the next point (it starts at the 1st point).
+- The program loads the points you set in the `get_configuration` function of `canvas.py`. 
+- Everytime you press enter the pen will be moved to the next point (it starts at the 1st point).
 - After one round you will be asked if you want to do another round.
-- With this process you can check the calibration and manually adjust the 3 points in the `plane_config.pkl` or the drawing plane if needed. If you decide to adjust the `plane_config.pkl`, you need to re-start the program to see the changes. 
+- With this process you can check the calibration and manually adjust the 3 points in the `get_configuration` function or the drawing plane if needed. If you decide to adjust the points, you need to re-start the program to see the changes. 
 
-##### 2. Record 3 new calibration points and store them inside the `plane_config.pkl` (This method is currently not used. If you want to use, you need to change the code):
+##### 2. Record 3 new calibration points:
+**_NOTE:_** This method is currently not used. If you want to use this method, you need to uncomment the current `get_configuration` function and add the uncommented `get_configuration` + `get_current_point` functions in the `canvas.py`).
+
+To start the calibration run the following command (after `catkin_make` and sourcing `devel/setup.bash`): 
+```console
+roslaunch leonao leonao.launch
+```
 You will get a prompt in the terminal that asks you if you want to calibrate the drawing plane. By answering with `y`, the calibration process will start. 
 - Move the pen to the 1st point (origin) and press enter. 
 - Move the pen to the 2nd point (the z-axis is defined by the direction from the 1st to the 2nd point) and press enter.
