@@ -70,8 +70,8 @@ class Canvas():
         The points are then saved to a file for future use.
         If the user chooses not to configure the plane, the method tries to load the plane points from a file.
         """
-        #choice = raw_input("Configure drawing plane? (y,n) ")[0].lower()
-        choice = 'n'
+        choice = raw_input("Configure drawing plane? (y,n) ")[0].lower()
+        #choice = 'n'
         if(choice == 'y'):
             plane_point_1, plane_point_2, plane_point_3 = self.get_configuration()
             self.save_config([plane_point_1, plane_point_2, plane_point_3])
@@ -160,6 +160,47 @@ class Canvas():
             success = 'y' != raw_input("Move again? (y,n) ")[0].lower()
 
         return plane_point_1, plane_point_2, plane_point_3
+
+    # def get_configuration(self):
+    #     """
+    #     Get 3D points from the user for plane configuration, by manually
+    #     moving the pen-tip the 3 plane points.
+    #     Return the points provided by the user 
+    #     """
+    #     raw_input("Move to pen to initial position. Press enter to start.")
+    #     
+    #     # T_bs: Transformation from the STATION-FRAME (s) to the BASE-FRAME (b)
+    #     joints_names = self.motion_proxy.getBodyNames("RArm")
+    #     joints_angles = self.motion_proxy.getAngles(joints_names, True)
+    #     self.T_bs = self.get_transform_client(joints_angles)
+    
+    #     # Read 1st point
+    #     raw_input("Move to 1st point of the plane. Press enter if done.")
+    #     plane_point_1 = self.get_current_point()
+    #     print("1st point read. ", plane_point_1)
+        
+    #     # Read 2nd point
+    #     raw_input("Move to 2nd point of the plane. Press enter if done.")
+    #     plane_point_2 = self.get_current_point()
+    #     print("2nd point read. ", plane_point_2)
+        
+    #     # Read 3rd point
+    #     raw_input("Move to 3rd point of the plane. Press enter if done.")
+    #     plane_point_3 = self.get_current_point()
+    #     print("3rd point read. ", plane_point_3)
+
+    #     return plane_point_1, plane_point_2, plane_point_3
+
+    # def get_current_point(self):
+    #     """
+    #     Returns the current point of the pen-tip w.r.t. the base frame.
+    #     """
+    #     joint_names = self.motion_proxy.getBodyNames("RArm")
+    #     joint_angles = self.motion_proxy.getAngles(joint_names, True)
+    #     T_temp = self.get_transform_client(joint_angles)
+    #     plane_point = [T_temp.r1_c4, T_temp.r2_c4, T_temp.r3_c4]
+    #     plane_point = self.convert_from_base_to_station(plane_point)
+    #     return plane_point
 
     def calculate_line_path_3D(self, start_point, end_point):
         """
