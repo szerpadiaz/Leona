@@ -17,9 +17,12 @@ The two different python environments communicate via the watchfolder (leonao/sr
 
 ## How to make the code run
 
-1. imageProcessing.py (src/leonao/libraries/imageProcessing.py): Run the file in a python 3.8 or newer terminal. Make sure the *DIRECTORY_TO_WATCH = "/home/hrsa/leonao/src/leonao/watchfolder"* is set correctly. 
-For the Labs PC (A) you can source the *project_setup_sketcher.bash* file from the project root.
+##### 1. imageProcessing.py (src/leonao/libraries/imageProcessing.py):
+Run the file in a python 3.8 or newer terminal. Make sure the `DIRECTORY_TO_WATCH = "/home/hrsa/leonao/src/leonao/watchfolder"` is set correctly. 
+For the Labs PC (A) you can source the `project_setup_sketcher.bash` file from the project root.
+
 Required packages are:
+
     - opencv
     - mediapipe
     - numpy
@@ -30,13 +33,33 @@ Required packages are:
     - watchdog
     - pillow / PIL
     - tkinter
-    - potrace
-
+    - potrace   
 (Exact requirements available in Test-Setup and Archive/sketcher/requirements.txt)
 
-2. In python2 terminals you can run roscore, the nao bringup and *leonao.launch*. After some general startup you can press enter in the terminal (will see a prompt to do so) to start LeoNaos interaction with you. The rest of the interaction can be controlled through LeoNaos head buttons when prompted to do so (Front: Starting to take a picture and accepting the picture to start drawing, Back: Canceling the sketch and take a new picture)
+After setting up the terminal with:
+```console
+source project_setup_sketcher.bash
+```
+you can run:
+```console
+python imageProcessing.py
+```
+to run the image processing pipeline.
 
-### Optional: (Re-)calibrating the drawing canvas
+##### 2. Run leonao.launch:
+In order to run this make sure you installed `KDL` (https://github.com/orocos/orocos_kinematics_dynamics/blob/master/orocos_kdl/INSTALL.md) and `kdl_parser` (http://wiki.ros.org/kdl_parser).
+
+Then run the following commands in python2 terminals. You first need to bring up the nao:
+```console
+roslaunch nao_bringup nao_full_py.launch
+```
+To start our program you can then run the following in another terminal:
+```console
+roslaunch leonao leonao.launch
+```
+After some general startup you will get a prompt in the terminal that asks you if you want calibrate the drawing plane (see next section). By answering 'n' the LeoNao will load the last configuration and starts main program. The rest of the interaction can be controlled through LeoNaos head buttons when prompted to do so (Front: Starting to take a picture and accepting the picture to start drawing, Back: Canceling the sketch and take a new picture)
+
+## Optional: (Re-)calibrating the drawing canvas
 
 The canvas usually does not have to be recalibrated between drawings or even startups, since the last calibration is stored in the `leonao/src/leonao/config/plane_config.pkl`. If the drawing canvas is moved relative to the robot, the plane has to be recalibrated. 
 
